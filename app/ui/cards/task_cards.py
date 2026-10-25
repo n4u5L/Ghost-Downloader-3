@@ -17,18 +17,16 @@ from app.ui.components.category_settings import addCategoryItems
 from app.ui.components.menu import buildMenu, buildMenuAction, openMenuAt
 from app.ui.components.message_box import MessageBox
 from app.ui.dialogs.file_select import FileSelectDialog
-from app.ui.i18n import toLocalizedError, tr
+from app.i18n import toLocalizedError, tr
 from app.ui.icons import buildIcon, buildIconButton, loadIcon, toCategoryIcon
 from app.ui.layout import Slot, checkBox, column, isClick, row, text
-from app.ui.theme import colorOf
+from app.ui.theme import colorOf, statusColor
 
 if TYPE_CHECKING:
     from app.models.task import Task
     from app.services.category_service import CategoryService
     from app.services.task_service import TaskService
 
-ERROR_COLOR = 0xFFB3261E
-WARNING_COLOR = 0xFFC8A050
 ROW_HEIGHT = 60
 FILE_ICON_BOX = 48
 FILE_ICON_SIZE = 40
@@ -243,7 +241,7 @@ class TaskCard(ui.Node):
             self.nameLabel.text = task.name
             isFileMissing = task.hasOutputFile and not isExisting(task.outputPath)
             if isFileMissing:
-                status, color = T("文件不存在"), WARNING_COLOR
+                status, color = T("文件不存在"), statusColor("warning")
             elif task.completedAt:
                 status = T("完成于 {}").format(datetime.fromtimestamp(task.completedAt).strftime("%Y-%m-%d %H:%M:%S"))
             else:
@@ -300,7 +298,7 @@ class TaskCard(ui.Node):
                 # 与 Qt 界面一样不画轨道，只画已完成的部分
                 self.progressBar.set_colors(track=0)
                 if kind == "error":
-                    self.progressBar.set_colors(indicator=ERROR_COLOR, track=0)
+                    self.progressBar.set_colors(indicator=statusColor("error"), track=0)
                 self.progressSlot.append_child(row(self.progressBar, flex=0))
             self._progressKind = kind
         if self.progressBar is not None and kind != "indeterminate":

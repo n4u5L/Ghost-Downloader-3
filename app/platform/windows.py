@@ -2,12 +2,8 @@ from __future__ import annotations
 
 import sys
 
-from PySide6.QtCore import QOperatingSystemVersion
-
-
 def isGreaterEqualWin10() -> bool:
-    cv = QOperatingSystemVersion.current()
-    return sys.platform == "win32" and cv.majorVersion() >= 10
+    return sys.platform == "win32" and sys.getwindowsversion().major >= 10
 
 
 def isWin10() -> bool:
@@ -15,8 +11,7 @@ def isWin10() -> bool:
 
 
 def isLessThanWin10() -> bool:
-    cv = QOperatingSystemVersion.current()
-    return sys.platform == "win32" and cv.majorVersion() < 10
+    return sys.platform == "win32" and sys.getwindowsversion().major < 10
 
 
 def isGreaterEqualWin11() -> bool:

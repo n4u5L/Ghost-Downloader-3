@@ -422,7 +422,7 @@ class SettingPage(FastScrollArea):
     def _showRestartTooltip(self) -> None:
         InfoBar.success(self.tr("已配置"), self.tr("重启软件后生效"), duration=1500, parent=self)
 
-    def _refreshPairTokenCard(self) -> None:
+    def _refreshPairTokenCard(self, *_args) -> None:
         self.browserPairTokenCard.setContent(cfg.browserExtensionPairToken.value)
 
     def _onCopyTokenClicked(self) -> None:

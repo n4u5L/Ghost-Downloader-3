@@ -35,7 +35,8 @@ def setupEnvironment():
     patchStackedWidgetAnimation()
     patchMaskDialogAnimation()
     qconfig.themeChanged.connect(IconBodyLabel.clearCache)
-    qconfig.load(f"{APP_DATA_DIR}/UserConfig.json", cfg)
+    from app.view.config import loadConfig
+    loadConfig(APP_DATA_DIR / "UserConfig.json")
 
     if cfg.dpiScale.value != 0:
         os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "0"

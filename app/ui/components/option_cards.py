@@ -8,7 +8,7 @@ from bkit import ui
 from app.client import PROFILE_FAMILY_LABELS
 from app.config.cfg import cfg
 from app.ui.components.editors import FolderPicker, Post
-from app.ui.i18n import tr
+from app.i18n import tr
 from app.ui.icons import buildIcon
 from app.ui.layout import column, row, text
 

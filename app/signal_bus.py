@@ -1,7 +1,7 @@
-from PySide6.QtCore import QObject, Signal
+from app.signal import Signal
 
 
-class SignalBus(QObject):
+class SignalBus:
     activationRequested = Signal()
     exceptionCaught = Signal(str)
 

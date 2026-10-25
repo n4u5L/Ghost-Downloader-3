@@ -55,9 +55,6 @@ class FeatureService:
         pack.addTask = self._taskService.add
         pack.submit = self._coroutineRunner.submit
 
-        for PageClass in pack.pages():
-            self._pagePackMap[PageClass] = pack
-
         for ParserClass in pack.parsers:
             parser = ParserClass()
             parser.pack = pack
@@ -158,7 +155,9 @@ class FeatureService:
     def pages(self) -> list[type[PackPage]]:
         result = []
         for pack in self._packs:
-            result.extend(pack.pages())
+            for pageClass in pack.pages():
+                self._pagePackMap[pageClass] = pack
+                result.append(pageClass)
         return result
 
     def settingGroups(self, parent: QWidget) -> list[CollapsibleSettingCardGroup]:

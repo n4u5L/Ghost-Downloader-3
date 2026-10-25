@@ -7,7 +7,6 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -17,25 +16,13 @@ from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from app.config.constants import DESKTOP_ID, DESKTOP_OBJECT_PATH
 from app.config.paths import EXECUTABLE_PATH
 from app.platform.url_scheme import isWakeUri
+from app.platform.invocation import Invocation, Reply
 
 if TYPE_CHECKING:
     from app.platform.application import Application
 
 USER_ID = getpass.getuser() if sys.platform == "win32" else str(os.getuid())
 INSTANCE_NAME = f"GhostDownloader-{USER_ID}"
-
-
-@dataclass(frozen=True)
-class Reply:
-    output: str
-    exitCode: int
-
-
-@dataclass(frozen=True)
-class Invocation:
-    argv: list[str]
-    cwd: str
-    reply: Callable[[Reply], None] = lambda _: None
 
 
 UNAVAILABLE = Reply(json.dumps({"error": {"code": "instanceUnavailable",

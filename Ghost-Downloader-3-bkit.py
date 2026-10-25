@@ -2,6 +2,9 @@
 
 bkit 不在 PyPI 上：BKIT_PYTHON_PATH 指向 bkit 构建产出的 build/python/<config> 目录，
 其中 _ui 扩展需与本项目的 Python 版本一致。仅支持 Windows。
+
+使用 uv run --no-dev Ghost-Downloader-3-bkit.py 运行，无需安装 Qt。
+GHOST_DOWNLOADER_DATA_DIR 可指定独立的数据目录；默认沿用原有用户目录或便携目录。
 """
 import ctypes
 import getpass
@@ -75,13 +78,10 @@ def main() -> int:
     from app.config.cfg import cfg
     from app.config.constants import VERSION
     from app.platform.hidden_subprocess import setupHiddenSubprocess
-    # 过渡期：cfg 仍是 qfluentwidgets 的 QConfig，只用到它的读写与信号，不需要 QApplication
-    from qfluentwidgets import qconfig
-
     setupHiddenSubprocess()
-    qconfig.load(f"{APP_DATA_DIR}/UserConfig.json", cfg)
+    cfg.load(APP_DATA_DIR / "UserConfig.json")
 
-    from app.ui.i18n import translator
+    from app.i18n import translator
     translator.load(cfg.language.value.value)
     logger.info("Ghost Downloader v{} launched (bkit)", VERSION)
 
@@ -107,7 +107,7 @@ def startApp(uiLoop, coroutineRunner, engine) -> int:
     from app.cli import Cli, isSilent
     from app.config.cfg import cfg
     from app.platform.desktop_keepalive import hold, release
-    from app.platform.instance import Invocation
+    from app.platform.invocation import Invocation
     from app.platform.shell import openFile
     from app.services.plan import Plan
     from app.services.port_listener import ListenStatus
@@ -115,7 +115,7 @@ def startApp(uiLoop, coroutineRunner, engine) -> int:
     from app.startup import checkUpdateAtStartup, deleteBackupDir, loadPacks
     from app.ui.components.info_bar import InfoBarIcon
     from app.ui.dialogs.name_conflict import NameConflictPrompt
-    from app.ui.i18n import tr
+    from app.i18n import tr
     from app.ui.shell.clipboard_listener import ClipboardListener
     from app.ui.shell.desktop_notification import (
         init, notifyDiskSpaceInsufficient, notifyParseFailed, notifyTaskCompleted,

@@ -8,7 +8,7 @@ from bkit import ui
 from app.signal import Signal
 from app.ui.components.menu import buildMenuAction
 from app.ui.components.setting_cards import CollapsibleSettingCard
-from app.ui.i18n import tr
+from app.i18n import tr
 from app.ui.icons import CATEGORY_FALLBACK_ICON, buildButton, buildIcon, buildIconButton, loadIcon, toCategoryIcon
 from app.ui.layout import column, row, text
 from app.ui.loop import UiLoop

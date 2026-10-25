@@ -31,7 +31,7 @@ from app.ui.components.setting_cards import (
 )
 from app.ui.dialogs.extension_install import ExtensionInstallDialog
 from app.ui.dialogs.pack_info import PackInfoDialog
-from app.ui.i18n import toLocalizedError, tr
+from app.i18n import toLocalizedError, tr
 from app.ui.icons import buildIconButton
 from app.ui.layout import Slot, column
 from app.ui.loop import UiLoop

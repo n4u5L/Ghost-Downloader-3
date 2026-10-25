@@ -7,15 +7,15 @@ import shutil
 import subprocess
 import sys
 import threading
+import tempfile
 from dataclasses import dataclass, field
 from typing import ClassVar
 from pathlib import Path
 
 import pytest
 from aiohttp import web
-from PySide6.QtCore import QStandardPaths
-
-QStandardPaths.setTestModeEnabled(True)
+TEST_DATA = tempfile.TemporaryDirectory(prefix="ghost-downloader-tests-")
+os.environ["GHOST_DOWNLOADER_DATA_DIR"] = TEST_DATA.name
 
 from app.config.cfg import cfg
 from app.config.paths import APP_DATA_DIR
@@ -26,7 +26,7 @@ from app.platform.filesystem import deletePath
 from app.services.coroutine_runner import CoroutineRunner
 from app.services.task_draft import TaskDraft
 from app.signal import Signal
-from qfluentwidgets import ConfigItem
+from app.config.store import ConfigItem
 
 ANDROID_FOLDER = Path(__file__).parents[1] / "android"
 collect_ignore_glob = [] if ANDROID_FOLDER.exists() else ["test_android.py"]

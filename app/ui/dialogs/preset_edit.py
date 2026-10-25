@@ -7,13 +7,13 @@ from bkit import ui
 from app.ui.components.menu import buildMenu, openTeachingTip
 from app.ui.components.message_box import MessageBoxBase
 from app.ui.components.option_cards import addProfileItems, toProfileLabel
-from app.ui.i18n import tr
+from app.i18n import tr
 from app.ui.icons import buildIconButton
 from app.ui.layout import row, text
+from app.ui.theme import statusColor
 
 WIDTH = 480
 HOST_SEPARATOR = re.compile(r"[\s,，;；]+")
-ERROR_COLOR = 0xFFB3261E
 
 
 def T(text: str) -> str:
@@ -47,7 +47,7 @@ class PresetEditDialog(MessageBoxBase):
         self.uaEdit = ui.OutlinedTextField()
         self.uaEdit.set_placeholder(T("留空则跟随 TLS 指纹自动生成"))
         self.uaEdit.set_line_limits(single_line=True)
-        self.warningLabel = ui.Text("", color=ERROR_COLOR)
+        self.warningLabel = ui.Text("", color=statusColor("error"))
 
     def _initLayout(self) -> None:
         for label, node in ((T("名称"), self.nameEdit), (T("匹配 Host"), self.hostsEdit),

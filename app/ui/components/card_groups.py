@@ -5,13 +5,12 @@ from typing import TYPE_CHECKING
 from bkit import ui
 
 from app.format import toReadableSize
-from app.ui.i18n import tr
+from app.i18n import tr
 from app.ui.layout import column, row, text
+from app.ui.theme import statusColor
 
 if TYPE_CHECKING:
     from app.ui.components.option_cards import OptionCard
-
-WARNING_COLOR = 0xFFC43501
 
 
 class TitledCardGroup(ui.Node):
@@ -53,7 +52,7 @@ class DraftCardGroup(TitledCardGroup):
         super().__init__()
         self._cardByUrl: dict[str, ui.Node] = {}
         self._ratioLabel = text()
-        self._ratioLabel.set_color(WARNING_COLOR)
+        self._ratioLabel.set_color(statusColor("warning"))
         self._sizeLabel = text()
         self.headerLayout.append_child(self._ratioLabel)
         self.headerLayout.append_child(self._sizeLabel)

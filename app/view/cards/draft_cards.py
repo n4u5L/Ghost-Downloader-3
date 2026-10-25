@@ -109,7 +109,7 @@ class DraftCard(QWidget):
         self.nameEdit.hide()
         self.nameLabel.show()
 
-    def _refreshCategoryButton(self) -> None:
+    def _refreshCategoryButton(self, *_args) -> None:
         if not cfg.isCategoryEnabled.value:
             self.categoryButton.hide()
             return

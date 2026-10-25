@@ -8,21 +8,16 @@ from bkit import ui
 
 from app.services.update_service import UpdateState
 from app.ui.components.info_bar import InfoBarArea, InfoBarIcon
-from app.ui.i18n import toLocalizedError, tr
+from app.i18n import toLocalizedError, tr
 from app.ui.icons import buildIcon, loadIcon
 from app.ui.layout import column, row, text
-from app.ui.theme import isDark
 
 if TYPE_CHECKING:
     from app.services.update_service import UpdateInfo
 
 # 进度条要和卡片同宽，卡片定宽，不像普通消息条那样随内容伸缩
 WIDTH = 420
-COLORS = {
-    UpdateState.DOWNLOADING: (0xFF9D5D00, 0xFFFCE100),
-    UpdateState.READY: (0xFF0F7B0F, 0xFF6CCB5F),
-    UpdateState.FAILED: (0xFFC42B1C, 0xFFFF99A4),
-}
+# 进度条与图标同色
 ICONS = {
     UpdateState.DOWNLOADING: InfoBarIcon.WARNING,
     UpdateState.READY: InfoBarIcon.SUCCESS,
@@ -101,12 +96,12 @@ class ProgressToast(ui.Node):
         if state == self._state:
             return
         self._state = state
-        light, dark = COLORS[state]
-        self.progressBar.set_colors(indicator=dark if isDark() else light)
-        iconName, color = ICONS[state].value
+        icon = ICONS[state]
+        if icon.tint is not None:
+            self.progressBar.set_colors(indicator=icon.tint)
         if self.iconSlot.children:
             self.iconSlot.remove_child(0)
-        self.iconSlot.append_child(buildIcon(iconName, tint=color))
+        self.iconSlot.append_child(buildIcon(icon.iconName, tint=icon.tint))
 
     def _setButton(self, button: ui.Node | None) -> None:
         if self.buttonSlot.children:

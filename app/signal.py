@@ -48,11 +48,10 @@ class BoundSignal:
                 if isinstance(s, weakref.WeakMethod) and s() == slot:
                     del self._slots[i]
                     return
-        else:
-            try:
-                self._slots.remove(slot)
-            except ValueError:
-                pass
+        try:
+            self._slots.remove(slot)
+        except ValueError:
+            pass
 
     def emit(self, *args: Any) -> None:
         for slot in self._slots[:]:

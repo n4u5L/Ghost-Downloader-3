@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from app.models.task import Task, TaskOptions
     from app.services.coroutine_runner import CoroutineRunner
     from app.services.speed_meter import SpeedMeter
-    from PySide6.QtCore import Signal
+    from app.signal import BoundSignal
     from PySide6.QtWidgets import QWidget
     from app.view.components.setting_card_group import CollapsibleSettingCardGroup
 
@@ -98,19 +98,19 @@ class PackConfig:
             return self.associateUriSchemes.value
         return True
 
-    def fileAssociationToggle(self) -> Signal | None:
+    def fileAssociationToggle(self) -> BoundSignal | None:
         if self.associateFileTypes is not None:
             return self.associateFileTypes.valueChanged
         return None
 
-    def uriSchemeAssociationToggle(self) -> Signal | None:
+    def uriSchemeAssociationToggle(self) -> BoundSignal | None:
         if self.associateUriSchemes is not None:
             return self.associateUriSchemes.valueChanged
         return None
 
     def tr(self, text: str) -> str:
-        from PySide6.QtCore import QCoreApplication
-        return QCoreApplication.translate(self.__class__.__name__, text)
+        from app.i18n import tr
+        return tr(self.__class__.__name__, text)
 
 
 @dataclass(frozen=True)

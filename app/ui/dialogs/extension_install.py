@@ -9,7 +9,7 @@ from app.config.paths import EXECUTABLE_DIR
 from app.platform.browser import openChromiumUrl
 from app.platform.shell import revealInFolder, setClipboardText
 from app.ui.components.message_box import MessageBoxBase
-from app.ui.i18n import tr
+from app.i18n import tr
 from app.ui.icons import buildImage
 from app.ui.layout import row, text
 

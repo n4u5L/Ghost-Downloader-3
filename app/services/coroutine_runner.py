@@ -20,8 +20,17 @@ class CoroutineRunner:
         self._running: dict[str, asyncio.Task] = {}
 
     def _run(self):
-        self._loop.run_forever()
-        self._loop.close()
+        try:
+            self._loop.run_forever()
+        finally:
+            tasks = asyncio.all_tasks(self._loop)
+            for task in tasks:
+                task.cancel()
+            if tasks:
+                self._loop.run_until_complete(asyncio.gather(*tasks, return_exceptions=True))
+            self._loop.run_until_complete(self._loop.shutdown_asyncgens())
+            self._loop.run_until_complete(self._loop.shutdown_default_executor())
+            self._loop.close()
 
     def start(self):
         self._thread.start()
@@ -107,9 +116,8 @@ class CoroutineRunner:
         return guarded
 
     def stop(self) -> None:
-        for task in list(self._running.values()):
-            task.cancel()
-        if self._loop and self._loop.is_running():
-            self._loop.call_soon_threadsafe(self._loop.stop)
         self._pending.clear()
+        if self._thread.is_alive():
+            self._loop.call_soon_threadsafe(self._loop.stop)
+            self._thread.join()
         self._running.clear()

@@ -18,10 +18,11 @@ from app.platform.shell import clipboardText, revealInFolder, setClipboardText
 from app.ui.cards.task_cards import isMultiFile, toFileIcon
 from app.ui.components.category_settings import toCategoryName
 from app.ui.components.message_box import MessageBoxBase
-from app.ui.i18n import toLocalizedError, tr
+from app.i18n import toLocalizedError, tr
 from app.ui.icons import buildIcon, buildIconButton
 from app.ui.layout import column, row, text
 from app.ui.loop import SingleShotTimer, UiLoop
+from app.ui.theme import statusColor
 
 if TYPE_CHECKING:
     from app.models.task import Task, TaskFile
@@ -33,7 +34,6 @@ CAPTION_WIDTH = 88
 REFRESH_INTERVAL = 1.0
 FILE_ROW_HEIGHT = 32
 MAX_VISIBLE_FILES = 10
-ERROR_COLOR = 0xFFB3261E
 
 
 def toTimeText(timestamp: int) -> str:
@@ -141,10 +141,10 @@ class ErrorBar(ui.Node):
         copyBox, _ = buildIconButton("content_copy", tr("ErrorBar", "复制"),
                                      lambda: setClipboardText(self.errorText.text))
         title = text(tr("ErrorBar", "下载失败"), fontWeight=600)
-        title.set_color(ERROR_COLOR)
+        title.set_color(statusColor("error"))
         card = ui.Card(ui.CardStyle.OUTLINED)
         card.set_padding(16, 12, 8, 12)
-        card.append_child(row(buildIcon("error", tint=ERROR_COLOR), column(title, self.errorText, spacing=4), copyBox,
+        card.append_child(row(buildIcon("error", tint=statusColor("error")), column(title, self.errorText, spacing=4), copyBox,
                               spacing=12, flex=1))
         self.append_child(card)
 

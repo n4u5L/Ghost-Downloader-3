@@ -19,7 +19,7 @@ from app.ui.components.menu import buildMenu, buildMenuAction, openMenuAt
 from app.ui.components.message_box import MessageBox
 from app.ui.dialogs.plan_task import PlanTaskDialog
 from app.ui.dialogs.task_drawer import TaskDrawer
-from app.ui.i18n import toLocalizedError, tr
+from app.i18n import toLocalizedError, tr
 from app.ui.icons import buildButton, buildIcon, buildIconButton, loadIcon
 from app.ui.layout import SecondaryClickArea, Slot, checkBox, column, overlay, row, text
 from app.ui.loop import SingleShotTimer, Timer, UiLoop

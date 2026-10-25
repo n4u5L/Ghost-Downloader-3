@@ -19,13 +19,13 @@ from app.ui.components.message_box import MessageBox
 from app.ui.components.progress_toast import ProgressToast
 from app.ui.dialogs.release_info import ReleaseInfoDialog
 from app.ui.dialogs.task_draft import TaskDraftDialog
-from app.ui.i18n import toLocalizedError, tr
+from app.i18n import toLocalizedError, tr
 from app.ui.icons import buildButton, buildIconButton, loadIcon
 from app.ui.layout import Slot, checkBox, column, overlay, row, text
 from app.ui.loop import UiLoop
 from app.ui.pages.setting_page import Quit, SettingPage
 from app.ui.pages.task_page import TaskPage
-from app.ui.theme import isDark, systemAccentColor
+from app.ui.theme import applyColorScheme, createTheme, schemeColor
 from app.update import fetchAssetUrl, fetchRelease
 
 if TYPE_CHECKING:
@@ -43,10 +43,10 @@ if TYPE_CHECKING:
     from app.ui.shell.clipboard_listener import ClipboardListener
 
 DEFAULT_SIZE = (960, 540)
-LIGHT_BACKGROUND = 0xFFFEF7FF
-DARK_BACKGROUND = 0xFF141218
 ICON_PATH = EXECUTABLE_DIR / "app" / "assets" / "logo.ico"
 SEARCH_WIDTH = 360
+# 上下各 8dp 留白夹着 40dp 高的搜索框
+SEARCH_BAR_HEIGHT = 56
 TASK_PAGE, ADD_TASK, SETTING_PAGE = 0, 1, 2
 NAVIGATION_ICONS = ["download", "add", "settings"]
 
@@ -106,7 +106,7 @@ class MainWindow:
         self._bind()
 
     def _initWidget(self) -> None:
-        self.theme = ui.MaterialTheme(dark=isDark(), seed=systemAccentColor())
+        self.theme = createTheme()
         self.surface = ui.Surface()
         self.navigationInterface = ui.NavigationRail(self._onNavigationSelected)
         for index, (label, icon) in enumerate(zip((T("下载任务"), T("新建任务"), T("设置")), NAVIGATION_ICONS)):
@@ -116,14 +116,17 @@ class MainWindow:
             self.navigationInterface.add_item(loadIcon(icon), label).set_always_show_label(True)
         # 对应 Qt 界面标题栏正中的搜索框，随页面换占位文字
         self.searchEdit = SearchLineEdit()
-        searchBox = ui.Box()
-        searchBox.set_size(SEARCH_WIDTH, None)
-        searchBox.append_child(self.searchEdit)
+        self.searchBox = ui.Box()
+        self.searchBox.set_size(SEARCH_WIDTH, None)
+        self.searchBox.append_child(self.searchEdit)
+        self.searchSlot = ui.Box()
+        # 像标题栏一样横跨整个窗口，导航栏和页面在它下面；高度固定，
+        # 没有搜索的页面只拿掉搜索框，导航项不跟着上下跳
         self.searchBar = ui.Box()
         self.searchBar.set_padding(0, 8)
+        self.searchBar.set_min_size(0, SEARCH_BAR_HEIGHT)
         self.searchBar.set_content_alignment(ui.Alignment.CENTER, ui.Alignment.CENTER)
-        self.searchBar.append_child(searchBox)
-        self.searchSlot = ui.Box()
+        self.searchBar.append_child(self.searchSlot)
         self.infoBars = InfoBarArea(self._uiLoop)
         self.taskPage = TaskPage(self._taskService, self._categoryService, self._speedMeter, self._plan,
                                  self._clipboardListener.setUrls, self.infoBars, self._uiLoop)
@@ -134,9 +137,8 @@ class MainWindow:
         infoBarBox = ui.Box()
         infoBarBox.set_padding(0, 0, 16, 16)
         infoBarBox.append_child(self.infoBars.node)
-        content = overlay(column(self.searchSlot, self.stackedWidget, flex=1), infoBarBox,
-                          ui.Alignment.END, ui.Alignment.END)
-        self.surface.append_child(row(self.navigationInterface, content, flex=1))
+        content = overlay(self.stackedWidget, infoBarBox, ui.Alignment.END, ui.Alignment.END)
+        self.surface.append_child(column(self.searchBar, row(self.navigationInterface, content, flex=1), flex=1))
         self.theme.append_child(self.surface)
         self.root = WindowRoot(self.theme, self._onSearchShortcut)
 
@@ -145,7 +147,7 @@ class MainWindow:
             width, height = DEFAULT_SIZE
         self.owner = ui.Owner(self.root)
         self.window = ui.Window(self.owner, width=width, height=height, title="Ghost Downloader",
-                                background=DARK_BACKGROUND if isDark() else LIGHT_BACKGROUND)
+                                background=schemeColor("surface"))
         self.window.set_minimum_size(*DEFAULT_SIZE)
         setWindowIcon(self.window.handle, ICON_PATH)
 
@@ -202,7 +204,7 @@ class MainWindow:
         if placeholder is not None:
             self.searchEdit.setPlaceholderText(placeholder)
             if not self.searchSlot.children:
-                self.searchSlot.append_child(self.searchBar)
+                self.searchSlot.append_child(self.searchBox)
         elif self.searchSlot.children:
             self.searchSlot.remove_child(0)
 
@@ -309,7 +311,7 @@ class MainWindow:
         revealInFolder(f"{APP_DATA_DIR}/GhostDownloader.log")
 
     def _onThemeChanged(self, *_args) -> None:
-        self.theme.set_color_scheme(dark=isDark(), seed=systemAccentColor())
+        applyColorScheme(self.theme)
         self.searchEdit.refreshColors()
 
     def _onCloseRequested(self) -> None:

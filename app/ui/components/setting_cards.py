@@ -14,7 +14,7 @@ from bkit import ui
 from app.config.cfg import cfg, currentHeaders, currentHeadersPresetIndex, proxy
 from app.platform.shell import openUrl
 from app.signal import Signal
-from app.ui.i18n import tr
+from app.i18n import tr
 from app.ui.icons import buildButton, buildIcon, buildIconButton, loadIcon
 from app.ui.layout import ClickArea, checkBox, column, row, text
 from app.ui.loop import SingleShotTimer, Timer

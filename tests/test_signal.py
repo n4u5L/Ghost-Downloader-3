@@ -57,3 +57,14 @@ def test_remove_last_reference_frees_owner(qapp):
     gc.collect()
 
     assert ref() is None
+
+
+def test_disconnect_builtin_method_stops_notifications():
+    source, received = Source(), []
+    source.changed.connect(received.append)
+    source.changed.emit(1)
+
+    source.changed.disconnect(received.append)
+    source.changed.emit(2)
+
+    assert received == [1]

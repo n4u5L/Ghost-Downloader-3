@@ -23,11 +23,11 @@ from app.platform.shell import openUrl, revealInFolder, setClipboardText, setWin
 from app.services.port_listener import ListenStatus
 from app.signal import Signal
 from app.ui.components.info_bar import InfoBarIcon
-from app.ui.i18n import toLocalizedError, tr, translator
+from app.i18n import toLocalizedError, tr, translator
 from app.ui.icons import CATEGORY_ICONS, buildIcon, buildImage
 from app.ui.layout import Slot, column, row, text
 from app.ui.loop import UiLoop
-from app.ui.theme import isDark, systemAccentColor
+from app.ui.theme import applyColorScheme, createTheme, schemeColor
 
 if TYPE_CHECKING:
     from app.models.pack import BinaryRuntime
@@ -43,11 +43,15 @@ STORE_COLUMN_WIDTH = 280
 ASSETS_DIR = EXECUTABLE_DIR / "app" / "assets"
 PREVIEW_PATH = ASSETS_DIR / "install_chrome_extension_guidance.png"
 LOGO_PATH = ASSETS_DIR / "logo.png"
-SUCCESS_COLOR = 0xFF0F7B46
-LIGHT_BACKGROUND = 0xFFFEF7FF
-DARK_BACKGROUND = 0xFF141218
-# (主题, 预览的底色, 预览的前景色)
-THEME_PREVIEWS = [("Light", 0xFFF3F3F3, 0xFFFFFFFF), ("Dark", 0xFF202020, 0xFF2D2D2D), ("Auto", 0xFF8A8A8A, 0xFFD0D0D0)]
+THEME_NAMES = ("Light", "Dark", "Auto")
+
+
+def themePreviewColors(name: str) -> tuple[int, int]:
+    """主题卡片预览的底色和窗口色：浅色、深色取对应配色的表面色，跟随系统取当前配色的中间调。"""
+    if name == "Auto":
+        return schemeColor("outline"), schemeColor("outline_variant")
+    dark = name == "Dark"
+    return schemeColor("surface_container_highest", dark), schemeColor("surface", dark)
 
 
 def centered(node: ui.Node) -> ui.Box:
@@ -68,10 +72,9 @@ class Banner(ui.Node):
 
     def __init__(self, icon: InfoBarIcon, title: str) -> None:
         super().__init__()
-        iconName, color = icon.value
         card = ui.Card(ui.CardStyle.OUTLINED)
         card.set_padding(16, 10)
-        card.append_child(row(buildIcon(iconName, tint=color), text(title, maxLines=2), spacing=12, flex=1))
+        card.append_child(row(buildIcon(icon.iconName, tint=icon.tint), text(title, maxLines=2), spacing=12, flex=1))
         self.append_child(card)
 
 
@@ -114,7 +117,8 @@ class BasicSettingsPage(ui.Node):
             return tr("BasicSettingsPage", text)
 
         self.header = PageHeader(T("基本设置"), T("选择你喜欢的外观，设置下载文件的保存位置"))
-        for (name, background, foreground), label in zip(THEME_PREVIEWS, (T("浅色"), T("深色"), T("跟随系统"))):
+        for name, label in zip(THEME_NAMES, (T("浅色"), T("深色"), T("跟随系统"))):
+            background, foreground = themePreviewColors(name)
             preview = ui.Box()
             preview.set_size(220, 120)
             preview.set_corner_radius(8)
@@ -332,7 +336,7 @@ class RuntimeInstallPage(ui.Node):
             trailing = ui.Row(spacing=12, cross_alignment=ui.Alignment.CENTER)
             trailing.append_child(text(runtime.name, fontSize=12))
             if runtime.path():
-                trailing.append_child(ui.Text(tr("RuntimeInstallPage", "已安装"), color=SUCCESS_COLOR))
+                trailing.append_child(ui.Text(tr("RuntimeInstallPage", "已安装"), color=schemeColor("primary")))
             else:
                 checkBox = ui.Checkbox(runtime.isRecommended)
                 checkBox.on_checked_change = lambda checked, box=checkBox: setattr(box, "checked", checked)
@@ -429,7 +433,7 @@ class CompletePage(ui.Node):
         finishBox.set_size(200, None)
         finishBox.append_child(ui.Button(T("开始使用"), self.finishClicked.emit, ui.ButtonStyle.FILLED))
         self.append_child(centered(column(
-            buildIcon("check_circle", 80, tint=SUCCESS_COLOR),
+            buildIcon("check_circle", 80, tint=schemeColor("primary")),
             ui.Spacer(0, 16),
             text(T("一切就绪"), fontSize=28, fontWeight=600),
             text(T("Ghost Downloader 已准备好为你工作。\n你可以随时在设置中调整所有选项。"), maxLines=3),
@@ -462,7 +466,7 @@ class OobeWindow:
         self._refreshNavigation()
 
     def _initWidget(self) -> None:
-        self.theme = ui.MaterialTheme(dark=isDark(), seed=systemAccentColor())
+        self.theme = createTheme()
         self.surface = ui.Surface()
         self.content = Slot()
 
@@ -513,7 +517,7 @@ class OobeWindow:
         self.root = Slot(self.theme, fallback=WINDOW_SIZE)
         self.owner = ui.Owner(self.root)
         self.window = ui.Window(self.owner, width=WINDOW_SIZE[0], height=WINDOW_SIZE[1], title="Ghost Downloader",
-                                background=DARK_BACKGROUND if isDark() else LIGHT_BACKGROUND)
+                                background=schemeColor("surface"))
         self.window.set_minimum_size(*WINDOW_SIZE)
         setWindowIcon(self.window.handle, ASSETS_DIR / "logo.ico")
 
@@ -530,7 +534,7 @@ class OobeWindow:
         self.browserExtensionPage.onPairRequested(request)
 
     def _onThemeChanged(self, *_args) -> None:
-        self.theme.set_color_scheme(dark=isDark(), seed=systemAccentColor())
+        applyColorScheme(self.theme)
 
     def _onLanguageChanged(self) -> None:
         translator.load(cfg.language.value.value)

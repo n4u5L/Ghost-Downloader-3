@@ -337,7 +337,7 @@ class TaskCard(CardWidget):
         self.iconLabel.setPixmap(QFileIconProvider().icon(QFileInfo(self._task.outputPath)).pixmap(48, 48))
         self.iconLabel.setFixedSize(48, 48)
 
-    def _refreshCategoryIcon(self) -> None:
+    def _refreshCategoryIcon(self, *_args) -> None:
         if not cfg.isCategoryEnabled.value or not self._task.category:
             self.nameLabel.setIcon(None)
             return

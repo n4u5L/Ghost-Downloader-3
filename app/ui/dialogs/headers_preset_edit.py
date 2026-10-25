@@ -4,10 +4,10 @@ from bkit import ui
 
 from app.header_text import parseHeaders, toHeadersText
 from app.ui.components.message_box import MessageBoxBase
-from app.ui.i18n import tr
+from app.i18n import tr
+from app.ui.theme import statusColor
 
 WIDTH = 500
-ERROR_COLOR = 0xFFB3261E
 
 
 def T(text: str) -> str:
@@ -31,7 +31,7 @@ class HeadersPresetEditDialog(MessageBoxBase):
         self.nameEdit.set_line_limits(single_line=True)
         self.headersEdit = ui.OutlinedTextField(ui.TextFieldState(toHeadersText(list(preset["headers"].items()))))
         self.headersEdit.set_line_limits(min_lines=6, max_lines=16)
-        self.warningLabel = ui.Text("", color=ERROR_COLOR)
+        self.warningLabel = ui.Text("", color=statusColor("error"))
 
     def _initLayout(self) -> None:
         for node in (self.nameEdit, self.headersEdit, self.warningLabel):

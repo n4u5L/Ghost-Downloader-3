@@ -11,7 +11,7 @@ from collections.abc import Callable
 from bkit import ui
 
 from app.signal import Signal
-from app.ui.i18n import tr
+from app.i18n import tr
 from app.ui.layout import EqualRow, column
 
 

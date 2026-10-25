@@ -14,7 +14,7 @@ from app.ui.components.card_groups import DraftCardGroup
 from app.ui.components.category_settings import addCategoryItems, toCategoryName
 from app.ui.components.menu import buildMenu
 from app.ui.dialogs.file_select import FileSelectDialog
-from app.ui.i18n import tr
+from app.i18n import tr
 from app.ui.icons import CATEGORY_FALLBACK_ICON, buildIcon, buildIconButton, loadIcon, toCategoryIcon
 from app.ui.layout import column, row, text
 from app.ui.theme import contentColor

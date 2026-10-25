@@ -9,7 +9,7 @@ from app.config.cfg import cfg
 from app.platform.file_dialog import openFolderDialog
 from app.signal import Signal
 from app.ui.components.menu import buildMenu, buildMenuAction
-from app.ui.i18n import tr
+from app.i18n import tr
 from app.ui.icons import buildIcon, buildIconButton
 from app.ui.layout import row, text
 from app.ui.loop import SingleShotTimer, Timer
@@ -152,6 +152,8 @@ class SearchLineEdit(ui.Node):
         self.box = ui.Box()
         self.box.set_padding(16, 0, 8, 0)
         self.box.set_min_size(0, 40)
+        # 最小高度比内容高，Box 默认顶部对齐，要竖直居中
+        self.box.set_content_alignment(ui.Alignment.START, ui.Alignment.CENTER)
         self.box.set_corner_radius(20)
         self.box.append_child(row(stack, self.clearSlot, self.searchIcon, spacing=4, flex=0))
         self.append_child(self.box)

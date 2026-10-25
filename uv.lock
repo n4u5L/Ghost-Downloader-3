@@ -384,8 +384,6 @@ dependencies = [
     { name = "nuitka" },
     { name = "pyobjc-framework-cocoa", marker = "sys_platform == 'darwin'" },
     { name = "pyobjc-framework-quartz", marker = "sys_platform == 'darwin'" },
-    { name = "pyside6" },
-    { name = "pyside6-fluent-widgets" },
     { name = "qrcode", extra = ["png"] },
     { name = "uvloop", marker = "sys_platform != 'win32'" },
     { name = "websockets" },
@@ -397,11 +395,18 @@ dependencies = [
 dev = [
     { name = "aiohttp" },
     { name = "brotli" },
+    { name = "pyside6" },
+    { name = "pyside6-fluent-widgets" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-qt" },
     { name = "types-libtorrent" },
     { name = "zstandard" },
+]
+qt = [
+    { name = "pyside6" },
+    { name = "pyside6-fluent-widgets" },
+    { name = "pytest-qt" },
 ]
 
 [package.metadata]
@@ -416,8 +421,6 @@ requires-dist = [
     { name = "nuitka", specifier = ">=4.2" },
     { name = "pyobjc-framework-cocoa", marker = "sys_platform == 'darwin'", specifier = ">=10.0" },
     { name = "pyobjc-framework-quartz", marker = "sys_platform == 'darwin'", specifier = ">=10.0" },
-    { name = "pyside6", specifier = "~=6.10.3" },
-    { name = "pyside6-fluent-widgets", specifier = ">=1.11.2" },
     { name = "qrcode", extras = ["png"], specifier = ">=8.2" },
     { name = "uvloop", marker = "sys_platform != 'win32'", specifier = ">=0.22.1" },
     { name = "websockets", specifier = ">=14" },
@@ -429,11 +432,18 @@ requires-dist = [
 dev = [
     { name = "aiohttp", specifier = ">=3.14.2" },
     { name = "brotli", specifier = ">=1.1.0" },
+    { name = "pyside6", specifier = "~=6.10.3" },
+    { name = "pyside6-fluent-widgets", specifier = ">=1.11.2" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-asyncio", specifier = ">=1.4.0" },
     { name = "pytest-qt", specifier = ">=4.5.0" },
     { name = "types-libtorrent", specifier = ">=2.0.11.20250816" },
     { name = "zstandard", specifier = ">=0.23.0" },
+]
+qt = [
+    { name = "pyside6", specifier = "~=6.10.3" },
+    { name = "pyside6-fluent-widgets", specifier = ">=1.11.2" },
+    { name = "pytest-qt", specifier = ">=4.5.0" },
 ]
 
 [[package]]

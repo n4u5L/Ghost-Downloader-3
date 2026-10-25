@@ -10,9 +10,10 @@ from app.format import toReadableSize
 from app.platform.shell import openUrl
 from app.ui.components.message_box import MessageBoxBase
 from app.ui.components.setting_cards import fixedWidth
-from app.ui.i18n import tr
+from app.i18n import tr
 from app.ui.icons import buildIconButton
 from app.ui.layout import column, row, text
+from app.ui.theme import statusColor
 from app.update import bestAsset
 
 if TYPE_CHECKING:
@@ -22,7 +23,6 @@ WIDTH = 640
 ASSET_NAME_WIDTH = 340
 ASSET_SIZE_WIDTH = 100
 ASSET_COUNT_WIDTH = 80
-WARNING_COLOR = 0xFF9D5D00
 
 
 def T(text: str) -> str:
@@ -45,7 +45,7 @@ class ReleaseInfoDialog(MessageBoxBase):
         self.yesButton.text = T("下载")
         self.versionLabel = text(release.version, fontSize=20, fontWeight=600)
         self.dateLabel = text(release.publishedAt[:10] if release.publishedAt else "", fontSize=12)
-        self.prereleaseLabel = ui.Text(T("⚠️ 预发布版本") if release.prerelease else "", color=WARNING_COLOR)
+        self.prereleaseLabel = ui.Text(T("⚠️ 预发布版本") if release.prerelease else "", color=statusColor("warning"))
         self.detailBox, _ = buildIconButton("link", T("打开发布页"), lambda: openUrl(release.pageUrl),
                                             ui.IconButtonVariant.FILLED)
         self.sponsorBox, _ = buildIconButton("favorite", T("赞助作者"), lambda: openUrl(DONATE_URL),

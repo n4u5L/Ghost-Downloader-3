@@ -443,6 +443,10 @@ class HttpTaskStep(TaskStep):
                         self.canUseRangeRequests = False
                         self.subworkers = self._buildSubworkers()
                         ftruncate(self._fd, 0)
+                        # supervisor 还开着进度文件，Windows 上要先关闭才能删除
+                        supervisor.cancel()
+                        with suppress(CancelledError):
+                            await supervisor
                         self._deleteRecord()
                         self._speedHistory.clear()
                         self._accelCheckTime = 0

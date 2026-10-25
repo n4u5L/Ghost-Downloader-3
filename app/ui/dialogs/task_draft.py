@@ -19,7 +19,7 @@ from app.ui.components.info_bar import InfoBarArea, InfoBarIcon
 from app.ui.components.message_box import MessageBoxBase
 from app.ui.components.option_cards import OutputFolderCard, SubworkerCountCard
 from app.ui.dialogs.batch_url import BatchUrlDialog
-from app.ui.i18n import toLocalizedError, tr
+from app.i18n import toLocalizedError, tr
 from app.ui.icons import buildButton, buildIconButton
 from app.ui.layout import row, text
 from app.ui.loop import SingleShotTimer, UiLoop

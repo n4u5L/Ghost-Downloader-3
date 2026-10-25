@@ -9,8 +9,8 @@ from urllib.parse import urlsplit
 from urllib.request import getproxies
 
 from app.config.paths import DOWNLOAD_DIR
-from qfluentwidgets import (
-    QConfig,
+from app.config.store import (
+    ConfigStore,
     ConfigItem,
     OptionsConfigItem,
     BoolValidator,
@@ -223,9 +223,8 @@ class HeadersPresetListValidator(ConfigValidator):
         return presets or [{"name": "默认", "headers": dict(BASE_HEADERS)}]
 
 
-class Config(QConfig):
+class Config(ConfigStore):
 
-    # 覆盖 QConfig.themeMode，让 QConfig.load() 自动用正确的 key 和 default
     themeMode = OptionsConfigItem(
         "Personalization", "ThemeMode", Theme.AUTO,
         OptionsValidator(Theme), ThemeSerializer(),

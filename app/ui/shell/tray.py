@@ -18,7 +18,7 @@ from loguru import logger
 from app.format import toReadableSize
 from app.platform.shell import loadIconHandle
 from app.signal import Signal
-from app.ui.i18n import tr
+from app.i18n import tr
 
 if TYPE_CHECKING:
     from app.services.speed_meter import SpeedMeter

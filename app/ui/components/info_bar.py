@@ -8,19 +8,27 @@ from bkit import ui
 from app.ui.icons import buildIcon
 from app.ui.layout import row, text
 from app.ui.loop import UiLoop
+from app.ui.theme import statusColor
 
-ERROR_COLOR = 0xFFB3261E
-WARNING_COLOR = 0xFFC8A050
-SUCCESS_COLOR = 0xFF2E7D32
 MAX_CONTENT_LINES = 6
 
 
 class InfoBarIcon(Enum):
+    """(图标名, statusColor() 的状态)；没有状态的图标跟随内容色。"""
     INFO = ("info", None)
     CLOUD = ("cloud", None)
-    SUCCESS = ("check_circle", SUCCESS_COLOR)
-    WARNING = ("error", WARNING_COLOR)
-    ERROR = ("error", ERROR_COLOR)
+    SUCCESS = ("check_circle", "success")
+    WARNING = ("error", "warning")
+    ERROR = ("error", "error")
+
+    @property
+    def iconName(self) -> str:
+        return self.value[0]
+
+    @property
+    def tint(self) -> int | None:
+        status = self.value[1]
+        return None if status is None else statusColor(status)
 
 
 class InfoBar(ui.Node):
@@ -33,8 +41,7 @@ class InfoBar(ui.Node):
         self._initWidget(icon, title, content)
 
     def _initWidget(self, icon: InfoBarIcon, title: str, content: str) -> None:
-        iconName, color = icon.value
-        self.iconWidget = buildIcon(iconName) if color is None else buildIcon(iconName, tint=color)
+        self.iconWidget = buildIcon(icon.iconName, tint=icon.tint)
         self.titleLabel = text(title, fontWeight=600)
         self.contentLabel = text(content, maxLines=MAX_CONTENT_LINES)
         self.closeButton = ui.IconButton(ui.MaterialIcon.CLOSE, self.close)

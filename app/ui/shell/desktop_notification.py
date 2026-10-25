@@ -12,7 +12,7 @@ from loguru import logger
 from app.config.paths import EXECUTABLE_DIR
 from app.format import toReadableSize
 from app.platform.shell import openFile, revealInFolder
-from app.ui.i18n import toLocalizedError, tr
+from app.i18n import toLocalizedError, tr
 
 if TYPE_CHECKING:
     from desktop_notifier import DesktopNotifier

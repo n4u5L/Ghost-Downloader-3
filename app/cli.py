@@ -8,7 +8,7 @@ from pathlib import Path
 from app.config.cfg import cfg, currentHeaders
 from app.config.constants import VERSION
 from app.models.task import Task, TaskOptions, TaskStatus, toTaskError
-from app.platform.instance import Invocation, Reply
+from app.platform.invocation import Invocation, Reply
 from app.platform.url_scheme import isLaunchUri, isWakeUri
 from app.services.task_service import NameConflictChoice
 

@@ -14,9 +14,10 @@ from app.format import toReadableSize
 from app.ui.components.category_settings import toCategoryName
 from app.ui.components.menu import buildMenu, buildMenuAction
 from app.ui.components.message_box import MessageBoxBase
-from app.ui.i18n import tr
+from app.i18n import tr
 from app.ui.icons import CATEGORY_FALLBACK_ICON, buildIcon, loadIcon, toCategoryIcon
 from app.ui.layout import column, row, text
+from app.ui.theme import statusColor
 
 if TYPE_CHECKING:
     from app.models.task import Task
@@ -26,7 +27,6 @@ WIDTH = 720
 ROW_HEIGHT = 40
 MAX_VISIBLE_ROWS = 10
 INDENT = 20
-ERROR_COLOR = 0xFFB3261E
 
 
 def T(text: str) -> str:
@@ -85,7 +85,7 @@ class FileSelectDialog(MessageBoxBase):
         self.yesButton.text = T("应用")
         self.cancelButton.text = T("取消")
         self.summaryLabel = text()
-        self.warningLabel = ui.Text("", color=ERROR_COLOR)
+        self.warningLabel = ui.Text("", color=statusColor("error"))
         self.treeView = ui.LazyColumn()
         self.treeView.set_item_provider(len(self._rows), self._createRow)
         self.selectAllButton = ui.Button(T("全选"), lambda: self._setSelected(set(self._allIndexes())),

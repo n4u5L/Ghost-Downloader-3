@@ -73,10 +73,14 @@ def loadUserPath() -> tuple[str, int]:
 
 
 def saveUserPath(path: str, kind: int) -> None:
+    import ctypes
+    from ctypes import wintypes
     import winreg
-    import win32con
-    import win32gui
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_SET_VALUE) as key:
         winreg.SetValueEx(key, "Path", 0, kind, path)
-    win32gui.SendMessageTimeout(win32con.HWND_BROADCAST, win32con.WM_SETTINGCHANGE, 0, "Environment",
-                                win32con.SMTO_ABORTIFHUNG, 5000)
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    user32.SendMessageTimeoutW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, ctypes.c_wchar_p,
+                                         wintypes.UINT, wintypes.UINT, ctypes.POINTER(ctypes.c_size_t)]
+    user32.SendMessageTimeoutW.restype = wintypes.LPARAM
+    result = ctypes.c_size_t()
+    user32.SendMessageTimeoutW(0xFFFF, 0x001A, 0, "Environment", 0x0002, 5000, ctypes.byref(result))

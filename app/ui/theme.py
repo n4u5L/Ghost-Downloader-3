@@ -7,10 +7,14 @@ from bkit import ui
 from app.config.cfg import cfg
 
 PERSONALIZE_KEY = r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
-DWM_KEY = r"Software\Microsoft\Windows\DWM"
-# MD3 基线配色的 onSurface：BasicTextField 不跟随主题，默认画黑字
-LIGHT_CONTENT_COLOR = 0xFF1D1B20
-DARK_CONTENT_COLOR = 0xFFE6E0E9
+# MD3 蓝色主色调的种子色：主色、背景、文字、错误色等全部按 MD3 动态配色（Tonal Spot）由它生成，
+# 浅色下 primary 为 #36618E，深色下为 #A0CAFD
+SEED_COLOR = 0xFF0061A4
+# MD3 没有成功、警告角色，按 MD3 自定义颜色的做法由各自的种子色生成色调盘，取与 primary 相同的色调
+STATUS_SEEDS = {"success": 0xFF2E7D32, "warning": 0xFFC8A050}
+
+# 按种子色和深浅色缓存的配色，主题以外的节点用它取色
+schemes: dict[tuple[int, bool], dict[str, int]] = {}
 
 
 def readUserDword(keyPath: str, name: str) -> int | None:
@@ -26,15 +30,6 @@ def isSystemDark() -> bool:
     return readUserDword(PERSONALIZE_KEY, "AppsUseLightTheme") == 0
 
 
-def systemAccentColor() -> int | None:
-    # DWM 存的是 0xAABBGGRR
-    value = readUserDword(DWM_KEY, "AccentColor")
-    if value is None:
-        return None
-    red, green, blue = value & 0xFF, (value >> 8) & 0xFF, (value >> 16) & 0xFF
-    return 0xFF000000 | (red << 16) | (green << 8) | blue
-
-
 def isDark() -> bool:
     mode = cfg.themeMode.value.value
     if mode == "Auto":
@@ -46,8 +41,39 @@ def themeModeOption(name: str):
     return next(option for option in cfg.themeMode.options if option.value == name)
 
 
+def createTheme() -> ui.MaterialTheme:
+    return ui.MaterialTheme(dark=isDark(), seed=SEED_COLOR)
+
+
+def applyColorScheme(theme: ui.MaterialTheme) -> None:
+    """换主题后按当前深浅色重新生成 theme 的配色。"""
+    theme.set_color_scheme(dark=isDark(), seed=SEED_COLOR)
+
+
+def schemeOf(seed: int, dark: bool | None = None) -> dict[str, int]:
+    if dark is None:
+        dark = isDark()
+    scheme = schemes.get((seed, dark))
+    if scheme is None:
+        scheme = schemes[seed, dark] = ui.MaterialTheme(dark=dark, seed=seed).color_scheme
+    return scheme
+
+
+def schemeColor(role: str, dark: bool | None = None) -> int:
+    """当前深浅色（或指定深浅色）配色的颜色角色，如 primary、error；用于还没挂到主题下的节点。"""
+    return schemeOf(SEED_COLOR, dark)[role]
+
+
+def statusColor(status: str, dark: bool | None = None) -> int:
+    """success、warning 或 error 的颜色：error 是配色的 error 角色，另两种是自定义颜色。"""
+    if status == "error":
+        return schemeColor("error", dark)
+    return schemeOf(STATUS_SEEDS[status], dark)["primary"]
+
+
 def contentColor() -> int:
-    return DARK_CONTENT_COLOR if isDark() else LIGHT_CONTENT_COLOR
+    # BasicTextField 不跟随主题，默认画黑字
+    return schemeColor("on_surface")
 
 
 def colorOf(node: ui.Node, role: str) -> int | None:

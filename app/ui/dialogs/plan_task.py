@@ -5,7 +5,7 @@ from bkit import ui
 from app.platform.file_dialog import openFileDialog
 from app.services.plan import PlanAction
 from app.ui.components.message_box import MessageBoxBase
-from app.ui.i18n import tr
+from app.i18n import tr
 from app.ui.icons import buildIconButton
 from app.ui.layout import row, text
 from app.ui.loop import UiLoop

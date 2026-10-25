@@ -7,25 +7,21 @@ from bkit import ui
 
 from app.services.update_service import UpdateState
 from app.ui.components.message_box import MessageBoxBase
-from app.ui.i18n import tr
+from app.i18n import tr
 from app.ui.icons import buildIconButton
 from app.ui.layout import row, text
-from app.ui.theme import isDark
+from app.ui.theme import schemeColor, statusColor
 
 if TYPE_CHECKING:
     from app.models.pack import FeaturePack
     from app.services.update_service import UpdateInfo, UpdateService
 
-# (浅色, 深色)
-STATUS_SUCCESS_COLORS = (0xFF0F7B0F, 0xFF6CCB5F)
-STATUS_AVAILABLE_COLORS = (0xFF9D5D00, 0xFFFFC83D)
-STATUS_DOWNLOADING_COLORS = (0xFF0067C0, 0xFF60CDFF)
-STATUS_FAILED_COLORS = (0xFFC42B1C, 0xFFFF99A4)
+# (符号, statusColor() 的状态)；下载中没有状态，用主色
 STATUSES = {
-    UpdateState.AVAILABLE: ("↑", STATUS_AVAILABLE_COLORS),
-    UpdateState.DOWNLOADING: ("↓", STATUS_DOWNLOADING_COLORS),
-    UpdateState.READY: ("✓", STATUS_SUCCESS_COLORS),
-    UpdateState.FAILED: ("✗", STATUS_FAILED_COLORS),
+    UpdateState.AVAILABLE: ("↑", "warning"),
+    UpdateState.DOWNLOADING: ("↓", None),
+    UpdateState.READY: ("✓", "success"),
+    UpdateState.FAILED: ("✗", "error"),
 }
 
 
@@ -34,8 +30,8 @@ def T(text: str) -> str:
 
 
 def toStatusLabel(state: UpdateState) -> ui.Text:
-    symbol, (light, dark) = STATUSES[state]
-    return ui.Text(symbol, color=dark if isDark() else light)
+    symbol, status = STATUSES[state]
+    return ui.Text(symbol, color=schemeColor("primary") if status is None else statusColor(status))
 
 
 class PackRow(ui.Node):

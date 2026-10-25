@@ -8,7 +8,7 @@ from app.format import toReadableSize
 from app.services.name_conflict_queue import NameConflict, NameConflictQueue
 from app.services.task_service import NameConflictChoice
 from app.ui.components.message_box import MessageBox
-from app.ui.i18n import tr
+from app.i18n import tr
 from app.ui.layout import checkBox
 
 

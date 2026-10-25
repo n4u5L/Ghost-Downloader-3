@@ -10,12 +10,15 @@ def loadResources(application):
 
 
 def loadTranslators(application):
-    from PySide6.QtCore import QLocale, QTranslator
+    from PySide6.QtCore import QCoreApplication, QLocale, QTranslator
     from app.config.cfg import cfg
+    from app.i18n import translator as sharedTranslator
+
+    sharedTranslator.set(QCoreApplication.translate)
 
     translator = QTranslator(application)
 
-    def setLocale():
+    def setLocale(*_):
         localeName = cfg.language.value.value
         locale = QLocale() if localeName == "Auto" else QLocale(localeName)
         application.removeTranslator(translator)
