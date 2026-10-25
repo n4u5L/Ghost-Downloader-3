@@ -62,6 +62,8 @@ async def probeProxyLatencies() -> dict[str, int]:
 
 class HuggingFaceProxySiteValidator(ConfigValidator):
     def validate(self, value) -> bool:
+        if value == CUSTOM_SITE_KEY:
+            return True
         site = toProxySite(value)
         if not site:
             return False
@@ -75,6 +77,8 @@ class HuggingFaceProxySiteValidator(ConfigValidator):
         )
 
     def correct(self, value) -> str:
+        if value == CUSTOM_SITE_KEY:
+            return value
         site = toProxySite(value)
         return site if self.validate(site) else ""
 
@@ -85,22 +89,6 @@ class HuggingFaceConfig(PackConfig):
     customSite = ConfigItem("HuggingFace", "CustomSite", "", HuggingFaceProxySiteValidator())
     accessToken = ConfigItem("HuggingFace", "AccessToken", "")
 
-    def settingGroups(self, parent: QWidget) -> list[CollapsibleSettingCardGroup]:
-        from qfluentwidgets import FluentIcon, SwitchSettingCard
-        from app.view.components.setting_card_group import CollapsibleSettingCardGroup
-        from .setting_cards import HuggingFaceProxySiteCard, HuggingFaceTokenCard
-
-        group = CollapsibleSettingCardGroup(self.tr("HuggingFace"), "huggingface", parent)
-        group.addSettingCards([
-            SwitchSettingCard(
-                FluentIcon.CONNECT, self.tr("启用 HuggingFace 加速"),
-                self.tr("命中 HuggingFace 链接时，自动改写为所选镜像站"),
-                self.isEnabled, group,
-            ),
-            HuggingFaceProxySiteCard(self.submit, group),
-            HuggingFaceTokenCard(group),
-        ])
-        return [group]
 
 
 huggingFaceConfig = HuggingFaceConfig()

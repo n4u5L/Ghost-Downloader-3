@@ -23,7 +23,6 @@ from app.config.cfg import cfg
 from app.config.paths import FEATURES_DIR
 from app.engine import Engine
 from app.i18n import translator, toLocalizedError
-from app.models.pack import PackServices
 from app.models.task import TaskError
 from app.services.coroutine_runner import CoroutineRunner
 from app.signal_bus import signalBus

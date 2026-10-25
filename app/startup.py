@@ -37,6 +37,7 @@ def createEngine(application):
     from app.engine import Engine
     from app.config.paths import APP_DATA_DIR
     from app.platform.desktop import deleteRecoverably, loadCrx
+    from app.view.features import QtFeatureService
     from app.services.coroutine_runner import CoroutineRunner
 
     if sys.platform == "win32":
@@ -50,7 +51,7 @@ def createEngine(application):
     )
     coroutineRunner.start()
     return Engine(coroutineRunner, QFileSystemWatcher(), loadCrx, APP_DATA_DIR / "browser_extension",
-                  deleteRecoverably)
+                  deleteRecoverably, featureServiceType=QtFeatureService)
 
 
 def deleteBackupDir():

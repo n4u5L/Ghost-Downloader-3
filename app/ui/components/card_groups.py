@@ -81,6 +81,7 @@ class DraftCardGroup(TitledCardGroup):
         if old is not None:
             self.scrollLayout.remove_child(self.scrollLayout.children.index(old))
         self._cardByUrl[url] = card
+        card.heightChanged.connect(self._refreshHeight)
         self.scrollLayout.append_child(card)
         self._refreshHeight()
 
@@ -104,7 +105,8 @@ class DraftCardGroup(TitledCardGroup):
         self._refreshHeight()
 
     def _refreshHeight(self) -> None:
-        self.listBox.set_size(None, min(len(self._cardByUrl), self.MAX_VISIBLE) * self.CARD_HEIGHT)
+        self.listBox.set_size(None, min(420, sum(getattr(card, "preferredHeight", self.CARD_HEIGHT)
+                                               for card in self._cardByUrl.values())))
 
 
 class OptionCardGroup(TitledCardGroup):

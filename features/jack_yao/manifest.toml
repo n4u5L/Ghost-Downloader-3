@@ -2,5 +2,11 @@
 entry = "pack.py"
 class = "JackYaoPack"
 dependencies = []
-version = "1.0.0"
+version = "1.0.2"
 gdMinVersion = "4.2.0"
+
+[[ui.pages]]
+title = "资源下载"
+icon = "cloud"
+module = "pages"
+class = "CatalogPage"

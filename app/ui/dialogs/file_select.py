@@ -1,7 +1,4 @@
-"""选择多文件任务要下载的文件。Qt 界面的树控件改为按层级缩进的列表，文件夹全部展开。
-
-各功能包的专用选择对话框（种子、哔哩哔哩分 P）依赖 Qt；bkit 界面对所有多文件任务都用这一个。
-"""
+"""通用多文件选择器；按目录层级缩进，媒体包另外提供选集和时间范围编辑。"""
 from __future__ import annotations
 
 import weakref
@@ -11,7 +8,7 @@ from typing import TYPE_CHECKING
 from bkit import ui
 
 from app.format import toReadableSize
-from app.ui.components.category_settings import toCategoryName
+from app.ui.components.categories import toCategoryName
 from app.ui.components.menu import buildMenu, buildMenuAction
 from app.ui.components.message_box import MessageBoxBase
 from app.i18n import tr

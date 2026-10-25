@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 from collections.abc import Callable
 from typing import Any, TYPE_CHECKING
@@ -21,6 +21,7 @@ class DraftItem:
     task: Task | None = None
     error: TaskError | None = None
     categoryOverride: str | None = None
+    optionOverrides: dict = field(default_factory=dict)
     confirmedOptions: dict | None = None
     confirmedAutoStart: bool = True
 
@@ -83,6 +84,14 @@ class TaskDraft:
         if item.task is not None:
             item.task.category = categoryId
         self.itemsChanged.emit()
+
+    def setUrlOptions(self, url: str, options: dict) -> None:
+        item = self.itemByUrl(url)
+        if item is None:
+            return
+        item.optionOverrides = dict(options)
+        if item.task is not None:
+            item.task.setOptions(self._buildOptions(item))
 
     def setUrls(self, urls: list[str]) -> None:
         seen: set[str] = set()
@@ -199,7 +208,7 @@ class TaskDraft:
         self.parsingBusyChanged.emit(self._isParsing())
 
     def _buildOptions(self, item: DraftItem) -> dict[str, Any]:
-        options = self._baseOptions.copy()
+        options = self._baseOptions | item.optionOverrides
         if item.categoryOverride is not None:
             options["category"] = item.categoryOverride
         return options

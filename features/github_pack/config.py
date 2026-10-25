@@ -76,21 +76,6 @@ class GitHubConfig(PackConfig):
     )
     customSite = ConfigItem("GitHub", "CustomSite", "", GitHubProxySiteValidator())
 
-    def settingGroups(self, parent: QWidget) -> list[CollapsibleSettingCardGroup]:
-        from qfluentwidgets import FluentIcon, SwitchSettingCard
-        from app.view.components.setting_card_group import CollapsibleSettingCardGroup
-        from .setting_cards import GitHubProxySiteCard
-
-        githubGroup = CollapsibleSettingCardGroup(self.tr("GitHub 加速"), "github", parent)
-        enableCard = SwitchSettingCard(
-            FluentIcon.LINK, self.tr("启用 GitHub 加速"),
-            self.tr("经代理站下载 GitHub 文件，不可用时自动切换其他站点或直连"),
-            self.enabled, githubGroup,
-        )
-        proxySiteCard = GitHubProxySiteCard(self.submit, githubGroup)
-
-        githubGroup.addSettingCards([enableCard, proxySiteCard])
-        return [githubGroup]
 
 
 githubConfig = GitHubConfig()

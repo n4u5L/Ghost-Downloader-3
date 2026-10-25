@@ -12,19 +12,19 @@ from app.config.cfg import cfg
 from app.format import toReadableSize
 from app.models.task import TaskStatus
 from app.platform.filesystem import isExisting
-from app.ui.cards.task_cards import TaskCard
-from app.ui.components.category_settings import addCategoryItems
+from app.ui.components.categories import addCategoryItems
 from app.ui.components.info_bar import InfoBarArea, InfoBarIcon
 from app.ui.components.menu import buildMenu, buildMenuAction, openMenuAt
 from app.ui.components.message_box import MessageBox
-from app.ui.dialogs.plan_task import PlanTaskDialog
-from app.ui.dialogs.task_drawer import TaskDrawer
 from app.i18n import toLocalizedError, tr
 from app.ui.icons import buildButton, buildIcon, buildIconButton, loadIcon
 from app.ui.layout import SecondaryClickArea, Slot, checkBox, column, overlay, row, text
 from app.ui.loop import SingleShotTimer, Timer, UiLoop
 
 if TYPE_CHECKING:
+    from app.ui.cards.task_cards import TaskCard
+    from app.ui.dialogs.plan_task import PlanTaskDialog
+    from app.ui.dialogs.task_drawer import TaskDrawer
     from app.models.task import Task, TaskError
     from app.services.category_service import CategoryService
     from app.services.plan import Plan
@@ -159,7 +159,7 @@ class TaskCommandBarView(ui.Node):
 class TaskPage(ui.Node):
     def __init__(self, taskService: TaskService, categoryService: CategoryService, speedMeter: SpeedMeter,
                  plan: Plan, copyUrls: Callable[[list[str]], None], infoBars: InfoBarArea,
-                 uiLoop: UiLoop) -> None:
+                 uiLoop: UiLoop, packViews) -> None:
         super().__init__()
         self._taskService = taskService
         self._copyUrls = copyUrls
@@ -168,6 +168,7 @@ class TaskPage(ui.Node):
         self._plan = plan
         self._infoBars = infoBars
         self._uiLoop = uiLoop
+        self._packViews = packViews
         self._filterMode = FilterMode.ALL
         self._categoryFilter = ""
         self._searchText = ""
@@ -228,8 +229,7 @@ class TaskPage(ui.Node):
         self.list.set_item_provider(0, self._createCard, key=self._keyAt)
         self.listSlot = Slot(self.list)
 
-        self.commandView = TaskCommandBarView()
-        self.commandView.setCategoryVisible(bool(cfg.isCategoryEnabled.value))
+        self.commandView = None
         self.commandSlot = ui.Box()
         self._onSpeedLimitChanged()
 
@@ -268,6 +268,9 @@ class TaskPage(ui.Node):
         cfg.isCategoryEnabled.valueChanged.connect(self._onCategoryEnabledChanged)
         self._categoryService.categoriesChanged.connect(self._onCategoriesChanged)
 
+    def _buildCommandView(self):
+        self.commandView = TaskCommandBarView()
+        self.commandView.setCategoryVisible(bool(cfg.isCategoryEnabled.value))
         actions = self.commandView.actions
         actions["moveToFront"].on_click = self._onMoveToFrontSelected
         actions["redownload"].on_click = self._onRedownloadSelected
@@ -278,6 +281,7 @@ class TaskPage(ui.Node):
         actions["selectMissing"].on_click = self.selectMissing
         actions["invertSelect"].on_click = self.invertSelection
         actions["cancel"].on_click = lambda: self.setSelectionMode(False)
+        return self.commandView
 
     # ── 对外的操作 ──
 
@@ -338,9 +342,13 @@ class TaskPage(ui.Node):
         for card in self._liveCards.values():
             card.setSelectionMode(enter)
         if enter:
-            self.commandSlot.append_child(self.commandView)
+            self.commandSlot.append_child(self._buildCommandView())
         else:
             self.commandSlot.remove_child(0)
+            self.commandView = None
+            if self._menu:
+                self._menu.expanded = False
+                self._menu = None
 
     @property
     def isSelectionMode(self) -> bool:
@@ -409,6 +417,7 @@ class TaskPage(ui.Node):
         if not checked:
             self._plan.clear()
             return
+        from app.ui.dialogs.plan_task import PlanTaskDialog
         dialog = PlanTaskDialog(self, self._uiLoop)
 
         def onAccepted() -> None:
@@ -481,7 +490,8 @@ class TaskPage(ui.Node):
 
     def _onCategoryEnabledChanged(self, *_args) -> None:
         self._refreshCategoryFilterButton()
-        self.commandView.setCategoryVisible(bool(cfg.isCategoryEnabled.value))
+        if self.commandView:
+            self.commandView.setCategoryVisible(bool(cfg.isCategoryEnabled.value))
         # 卡片名称前的分类图标随之显示或隐藏
         for card in self._liveCards.values():
             card.refresh(force=True)
@@ -554,7 +564,7 @@ class TaskPage(ui.Node):
     def _createCard(self, index: int) -> ui.Node:
         task = self._tasks[index]
         taskId = task.taskId
-        card = TaskCard(task, self._taskService, self._categoryService, self._copyUrls, self._openDrawer)
+        card = self._packViews.byTask(task).taskCard(task, self._copyUrls, self._openDrawer)
         card.setSelectionMode(self._isSelectionMode)
         card.setChecked(taskId in self._selectedIds)
         card.selectionChanged.connect(
@@ -652,7 +662,9 @@ class TaskPage(ui.Node):
             self._openDrawer(task)
 
     def _openDrawer(self, task: Task) -> None:
-        self._drawer = TaskDrawer(task, self._taskService, self._categoryService, self, self._uiLoop)
+        from app.ui.dialogs.task_drawer import TaskDrawer
+        self._drawer = TaskDrawer(task, self._taskService, self._categoryService, self, self._uiLoop,
+                                  self._packViews.byTask(task))
         self._drawer.open()
 
     def _onChecksumStopped(self, task: Task, error: TaskError | None) -> None:
@@ -676,7 +688,11 @@ class TaskPage(ui.Node):
 
     def _onTick(self) -> None:
         self._tickTimer = self._uiLoop.post(self._onTick, TICK_INTERVAL)
-        for info in self.list.state.layout_info.visible_items_info:
+        items = self.list.state.layout_info.visible_items_info
+        if not items:
+            return
+        from app.ui.cards.task_cards import TaskCard
+        for info in items:
             card = self.list.item_node_at(info.index)
             if isinstance(card, TaskCard):
                 card.refresh()

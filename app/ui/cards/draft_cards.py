@@ -11,7 +11,7 @@ from app.format import toReadableSize
 from app.signal import Signal
 from app.ui.cards.task_cards import isMultiFile, toFileIcon
 from app.ui.components.card_groups import DraftCardGroup
-from app.ui.components.category_settings import addCategoryItems, toCategoryName
+from app.ui.components.categories import addCategoryItems, toCategoryName
 from app.ui.components.menu import buildMenu
 from app.ui.dialogs.file_select import FileSelectDialog
 from app.i18n import tr
@@ -34,6 +34,8 @@ class DraftCard(ui.Node):
     """解析结果的一行：文件图标、可直接改的文件名、同名提示、大小和分类按钮。"""
 
     categoryPicked = Signal(str)
+    heightChanged = Signal()
+    preferredHeight = DraftCardGroup.CARD_HEIGHT
 
     def __init__(self, task: Task, categoryService: CategoryService,
                  probeConflict: Callable[[Task], Path | None]) -> None:
@@ -78,8 +80,9 @@ class DraftCard(ui.Node):
         box = ui.Box()
         box.set_size(None, DraftCardGroup.CARD_HEIGHT)
         box.set_padding(16, 0, 8, 0)
-        box.append_child(row(self.iconLabel, self.nameEdit, self.conflictSlot, self.sizeLabel,
-                             self.categorySlot, self.selectFilesSlot, spacing=12, flex=1))
+        self.hBoxLayout = row(self.iconLabel, self.nameEdit, self.conflictSlot, self.sizeLabel,
+                              self.categorySlot, self.selectFilesSlot, spacing=12, flex=1)
+        box.append_child(self.hBoxLayout)
         self.append_child(column(ui.HorizontalDivider(), box))
 
     def _bind(self) -> None:
@@ -146,3 +149,14 @@ class DraftCard(ui.Node):
         self._refreshCategoryButton()
         self._refreshConflictIcon()
         self.categoryPicked.emit(categoryId)
+
+    def dispose(self):
+        cfg.isCategoryEnabled.valueChanged.disconnect(self._refreshCategoryButton)
+        if self._fileSelectDialog and self._fileSelectDialog.isOpen:
+            self._fileSelectDialog.close(False)
+        self._fileSelectDialog = None
+        if self._menu:
+            self._menu.expanded = False
+            self._menu = None
+        while self.children:
+            self.remove_child(0)

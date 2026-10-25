@@ -122,14 +122,5 @@ class GitHubPack(FeaturePack):
     config = githubConfig
     parsers = [GitHubParser]
 
-    def taskCardClass(self, task: Task) -> type | None:
-        from http_pack.cards import HttpTaskCard
-        return HttpTaskCard
 
-    def optionCards(self, task, parent=None):
-        from http_pack.pack import HttpPack
-        return HttpPack.optionCards(self, task, parent)
 
-    def editCards(self, task, parent=None):
-        from http_pack.pack import HttpPack
-        return HttpPack.editCards(self, task, parent)

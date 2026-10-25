@@ -52,56 +52,6 @@ class BitTorrentConfig(PackConfig):
     )
     webTrackerCustomList = ConfigItem("BitTorrent", "WebTrackerCustomList", "")
 
-    def settingGroups(self, parent: QWidget) -> list[CollapsibleSettingCardGroup]:
-        import sys
-        from qfluentwidgets import ComboBoxSettingCard, FluentIcon, RangeSettingCard, SwitchSettingCard
-        from app.view.components.setting_card_group import CollapsibleSettingCardGroup
-        from app.view.components.setting_cards import SpinBoxSettingCard
-        from app.view.components.bootstrap_list import BootstrapListCard
-        from .trackers import trackerList
-
-        btGroup = CollapsibleSettingCardGroup(self.tr("BitTorrent 下载"), "bittorrent", parent)
-
-        cards = [
-            SpinBoxSettingCard(FluentIcon.GLOBE, self.tr("监听端口"),
-                self.tr("0 表示交给系统自动分配可用端口"), "", self.listenPort, btGroup, 1),
-            SpinBoxSettingCard(FluentIcon.HISTORY, self.tr("元数据超时"),
-                self.tr("解析 magnet 链接时等待元数据的最长时间"), " s", self.metadataTimeout, btGroup, 5),
-            RangeSettingCard(self.maxConnections, FluentIcon.PEOPLE, self.tr("连接数上限"),
-                self.tr("单个 BT 任务对应 session 的最大连接数"), btGroup),
-            SpinBoxSettingCard(FluentIcon.SHARE, self.tr("上传限速"),
-                self.tr("0 表示不限速，单位为 session 级别的 KB/s"), " KB/s",
-                self.maxUploadSpeed, btGroup, 64, 1 / 1024),
-            SpinBoxSettingCard(FluentIcon.SHARE, self.tr("自动停止做种分享率"),
-                self.tr("0 表示不按分享率自动停止，100% 表示分享率 1.0"), " %",
-                self.seedingRatioLimit, btGroup, 50),
-            SpinBoxSettingCard(FluentIcon.STOP_WATCH, self.tr("自动停止做种时长"),
-                self.tr("0 表示不按做种时长自动停止"), " min",
-                self.seedingTimeLimit, btGroup, 10),
-            ComboBoxSettingCard(self.storageMode, FluentIcon.SAVE, self.tr("文件分配模式"),
-                self.tr("稀疏分配更省磁盘写入，预分配更容易提前暴露空间不足"),
-                texts=[self.tr("稀疏分配"), self.tr("预分配")], parent=btGroup),
-            SwitchSettingCard(FluentIcon.SAVE, self.tr("保存 Magnet 种子文件"),
-                self.tr("下载 magnet 链接时额外保存 .torrent 文件"), self.saveMagnetFile, btGroup),
-            SwitchSettingCard(FluentIcon.LIBRARY, self.tr("顺序下载"),
-                self.tr("按文件顺序下载，适合边下边看但通常会影响整体效率"),
-                self.enableSequentialDownload, btGroup),
-            SwitchSettingCard(FluentIcon.GLOBE, self.tr("启用 DHT"),
-                self.tr("允许通过 DHT 网络发现 peers"), self.enableDht, btGroup),
-            SwitchSettingCard(FluentIcon.HOME, self.tr("启用 LSD"),
-                self.tr("在局域网中广播并发现同一 torrent 的 peers"), self.enableLsd, btGroup),
-            SwitchSettingCard(FluentIcon.LINK, self.tr("附加 Tracker 列表"),
-                self.tr("把 Tracker 列表合并到新建的 BT 任务中"),
-                self.enableWebTrackers, btGroup),
-            SwitchSettingCard(FluentIcon.SYNC, self.tr("自动更新订阅"),
-                self.tr("每天在后台更新一次 Tracker 列表"),
-                self.autoRefreshWebTrackers, btGroup),
-            BootstrapListCard(FluentIcon.GLOBE, self.tr("Tracker 列表"), trackerList,
-                self.webTrackerSources, self.submit, btGroup,
-                customItem=self.webTrackerCustomList, probeNetworkText=self._probeDhtText),
-        ]
-        btGroup.addSettingCards(cards)
-        return [btGroup]
 
     async def _probeDhtText(self) -> tuple[str, dict]:
         from .session import btSession

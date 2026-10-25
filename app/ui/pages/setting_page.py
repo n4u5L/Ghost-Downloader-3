@@ -24,6 +24,7 @@ from app.ui.components.category_settings import CategoryRulesCard
 from app.ui.components.editors import FolderPicker
 from app.ui.components.info_bar import InfoBarArea, InfoBarIcon
 from app.ui.components.message_box import MessageBox, MessageBoxBase
+from app.ui.components.runtime_card import RuntimeCard
 from app.ui.components.setting_card_group import SettingCardGroup
 from app.ui.components.setting_cards import (
     ClipboardSettingCard, ComboBoxSettingCard, HeadersPresetSettingCard, HyperlinkCard, IdentitySettingCard, LineEditSettingCard, ProxySettingCard, PushSettingCard,
@@ -43,6 +44,7 @@ if TYPE_CHECKING:
     from app.services.coroutine_runner import CoroutineRunner
     from app.services.feature_service import FeatureService
     from app.services.port_listener import PortListener
+    from app.services.runtime_status import RuntimeStatusService
     from app.services.update_service import UpdateInfo, UpdateService
 
 KB = 1024
@@ -58,8 +60,9 @@ class SettingPage(ui.Node):
 
     def __init__(self, featureService: FeatureService, browserService: BrowserService, browserListener: PortListener,
                  aria2RpcListener: PortListener, coroutineRunner: CoroutineRunner, categoryService: CategoryService,
-                 updateService: UpdateService, loadCrx: Callable[[], bytes], requestQuit: Quit,
-                 infoBars: InfoBarArea, uiLoop: UiLoop) -> None:
+                 updateService: UpdateService, runtimeStatusService: RuntimeStatusService,
+                 loadCrx: Callable[[], bytes], requestQuit: Quit,
+                 infoBars: InfoBarArea, uiLoop: UiLoop, packViews) -> None:
         super().__init__()
         self._featureService = featureService
         self._browserService = browserService
@@ -68,11 +71,13 @@ class SettingPage(ui.Node):
         self._coroutineRunner = coroutineRunner
         self._categoryService = categoryService
         self._updateService = updateService
+        self._runtimeStatusService = runtimeStatusService
         self._loadCrx = loadCrx
         self._requestQuit = requestQuit
         self._infoBars = infoBars
         self._uiLoop = uiLoop
         self._post = uiLoop.post
+        self._packViews = packViews
         # 打开中的对话框；bkit 的对话框不阻塞，要有人持有它
         self._dialog: MessageBoxBase | None = None
         self._installDialog: ExtensionInstallDialog | None = None
@@ -84,8 +89,10 @@ class SettingPage(ui.Node):
         self.aria2RpcGroup = SettingCardGroup(T("Aria2 RPC 兼容"), "aria2rpc")
         self.personalGroup = SettingCardGroup(T("个性化"), "personalization")
         self.softwareGroup = SettingCardGroup(T("应用"), "software")
+        self.runtimeGroup = SettingCardGroup(tr("RuntimeInstallPage", "推荐组件"), "runtimes")
         self.aboutGroup = SettingCardGroup(T("关于"), "about")
 
+        self.browserEnableCard = self.browserPairTokenCard = self.aria2EnableCard = None
         self._initWidget()
         self._initCards()
         self._initLayout()
@@ -105,6 +112,22 @@ class SettingPage(ui.Node):
         self.append_child(self.contentSlot)
 
     def _initCards(self) -> None:
+        self.runtimeGroup.setCardsBuilder(self._buildRuntimeCards)
+        self.generalGroup.setCardsBuilder(self._buildGeneralCards)
+        self.categoryGroup.setCardsBuilder(self._buildCategoryCards)
+        self.associationGroup.setCardsBuilder(self._buildAssociationCards)
+        self.browserGroup.setCardsBuilder(self._buildBrowserCards)
+        self.aria2RpcGroup.setCardsBuilder(self._buildAria2Cards)
+        self.personalGroup.setCardsBuilder(self._buildPersonalCards)
+        self.softwareGroup.setCardsBuilder(self._buildSoftwareCards)
+        self.aboutGroup.setCardsBuilder(self._buildAboutCards)
+
+    def _buildRuntimeCards(self) -> None:
+        self.runtimeGroup.addSettingCards([
+            RuntimeCard(self._runtimeStatusService, runtime) for runtime in self._featureService.runtimes()
+        ])
+
+    def _buildGeneralCards(self) -> None:
         post = self._post
         self.speedLimitationCard = SpinBoxSettingCard(
             "speed", T("下载限速"), T("当下载任务界面限速开关开启时，所有任务将根据此值进行限速"),
@@ -139,13 +162,16 @@ class SettingPage(ui.Node):
             IdentitySettingCard(),
             HeadersPresetSettingCard(),
         ])
+        self.downloadFolderPicker.pathChanged.connect(self._onDownloadFolderChanged)
 
+    def _buildCategoryCards(self) -> None:
         self.categoryGroup.addSettingCards([
             SwitchSettingCard("label", T("启用下载分类"), T("根据扩展名将下载任务归类，便于筛选与分发到指定文件夹"),
                               cfg.isCategoryEnabled),
             CategoryRulesCard(self._categoryService, self._uiLoop),
         ])
 
+    def _buildAssociationCards(self) -> None:
         self.urlSchemeCard = SwitchSettingCard(
             "link", T("允许浏览器扩展唤醒"), T("浏览器扩展可通过 ghostdownloader:// 协议启动桌面端"),
             cfg.isUrlSchemeRegistered,
@@ -171,7 +197,10 @@ class SettingPage(ui.Node):
                     pack.config.associateUriSchemes,
                 ))
         self.associationGroup.addSettingCards(associationCards)
+        self.urlSchemeCard.checkedChanged.connect(self._onUrlSchemeChanged)
 
+    def _buildBrowserCards(self) -> None:
+        post = self._post
         self.browserEnableCard = SwitchSettingCard("cable", T("启用浏览器扩展"), "", cfg.isBrowserExtensionEnabled)
         self.browserPairTokenCard = PushSettingCard(
             T("复制令牌"), "content_copy", T("配对令牌"), cfg.browserExtensionPairToken.value, isPrimary=True)
@@ -201,7 +230,13 @@ class SettingPage(ui.Node):
             self.chromiumInstallCard,
             self.browserPortCard,
         ])
+        self.browserPairTokenCard.clicked.connect(self._onCopyTokenClicked)
+        self.regenerateTokenButton.on_click = self._onRegenerateTokenClicked
+        self.chromiumInstallCard.clicked.connect(self._onChromiumInstallClicked)
+        self._refreshBrowserStatus()
 
+    def _buildAria2Cards(self) -> None:
+        post = self._post
         self.aria2EnableCard = SwitchSettingCard("link", T("启用 Aria2 RPC 兼容"), "", cfg.isAria2RpcEnabled)
         self.aria2RpcGroup.addSettingCards([
             self.aria2EnableCard,
@@ -211,7 +246,9 @@ class SettingPage(ui.Node):
             SwitchSettingCard("vpn_lock", T("模拟浏览器指纹"), T("为通过 Aria2 RPC 接收的任务附加浏览器 TLS 指纹与请求头"),
                               cfg.aria2RpcEmulateFingerprint),
         ])
+        self._refreshAria2Status()
 
+    def _buildPersonalCards(self) -> None:
         self.personalGroup.addSettingCards([
             ComboBoxSettingCard(cfg.themeMode, "brush", T("应用主题"), T("更改应用程序的外观"),
                                 texts=[T("浅色"), T("深色"), T("跟随系统设置")]),
@@ -219,6 +256,8 @@ class SettingPage(ui.Node):
                                 texts=[LANGUAGE_TEXTS.get(lang, T("使用系统设置")) for lang in cfg.language.options]),
         ])
 
+    def _buildSoftwareCards(self) -> None:
+        post = self._post
         self.autoRunCard = SwitchSettingCard(
             "vpn_lock", T("开机启动"), T("在系统启动时静默运行 Ghost Downloader"), cfg.shouldRunAtLogin)
         self.commandLineToolCard = PushSettingCard(
@@ -245,7 +284,11 @@ class SettingPage(ui.Node):
             ClipboardSettingCard(self._featureService.packs),
             self.migrateCard,
         ])
+        self.autoRunCard.checkedChanged.connect(self._onRunAtLoginChanged)
+        self.commandLineToolCard.clicked.connect(self._onCommandLineToolClicked)
+        self.migrateCard.clicked.connect(self._onMigrateClicked)
 
+    def _buildAboutCards(self) -> None:
         self.feedbackCard = PushSettingCard(
             T("提供反馈"), "feedback", T("提供反馈"), T("通过提供反馈来帮助我们改进 Ghost Downloader，也可查看日志排查问题"),
             isPrimary=True,
@@ -263,10 +306,14 @@ class SettingPage(ui.Node):
             self.packInfoCard,
             self.aboutCard,
         ])
+        self.feedbackCard.clicked.connect(lambda: openUrl(FEEDBACK_URL))
+        self.packInfoCard.clicked.connect(self._onPackInfoClicked)
+        self.aboutCard.clicked.connect(self._onAboutCardClicked)
 
     def _initLayout(self) -> None:
         groups = [self.generalGroup, self.categoryGroup, self.associationGroup, self.browserGroup,
-                  self.aria2RpcGroup, self.personalGroup, self.softwareGroup, self.aboutGroup]
+                  self.aria2RpcGroup, self.personalGroup, self.softwareGroup, self.runtimeGroup,
+                  *self._packViews.settings(), self.aboutGroup]
         # 对应 Qt 界面的 _restoreOrder：按保存的顺序排，没排过的按默认顺序，「关于」默认在最后
         keyToGroup = {group.key: group for group in groups}
         order = [key for key in cfg.settingGroupOrder.value if key in keyToGroup]
@@ -310,22 +357,10 @@ class SettingPage(ui.Node):
         for group in self._groups:
             group.moveRequested.connect(self._onGroupMoveRequested)
         cfg.appRestartSig.connect(self._onRestartRequired)
-        self.downloadFolderPicker.pathChanged.connect(self._onDownloadFolderChanged)
         cfg.browserExtensionPairToken.valueChanged.connect(self._refreshPairTokenCard)
         self._browserService.connectionChanged.connect(self._refreshBrowserStatus)
         self._browserListener.stateChanged.connect(self._refreshBrowserStatus)
         self._aria2RpcListener.stateChanged.connect(self._refreshAria2Status)
-
-        self.browserPairTokenCard.clicked.connect(self._onCopyTokenClicked)
-        self.regenerateTokenButton.on_click = self._onRegenerateTokenClicked
-        self.chromiumInstallCard.clicked.connect(self._onChromiumInstallClicked)
-        self.urlSchemeCard.checkedChanged.connect(self._onUrlSchemeChanged)
-        self.autoRunCard.checkedChanged.connect(self._onRunAtLoginChanged)
-        self.commandLineToolCard.clicked.connect(self._onCommandLineToolClicked)
-        self.feedbackCard.clicked.connect(lambda: openUrl(FEEDBACK_URL))
-        self.migrateCard.clicked.connect(self._onMigrateClicked)
-        self.packInfoCard.clicked.connect(self._onPackInfoClicked)
-        self.aboutCard.clicked.connect(self._onAboutCardClicked)
 
     def _onDownloadFolderChanged(self, path: str) -> None:
         cfg.set(cfg.downloadFolder, path)
@@ -335,6 +370,8 @@ class SettingPage(ui.Node):
         self._infoBars.add(T("已配置"), T("重启软件后生效"), icon=InfoBarIcon.SUCCESS, duration=1.5)
 
     def _refreshPairTokenCard(self, *_args) -> None:
+        if self.browserPairTokenCard is None:
+            return
         self.browserPairTokenCard.setContent(cfg.browserExtensionPairToken.value)
 
     def _onCopyTokenClicked(self) -> None:
@@ -363,6 +400,8 @@ class SettingPage(ui.Node):
             Path(path).write_bytes(self._loadCrx())
 
     def _refreshBrowserStatus(self, *_args) -> None:
+        if self.browserEnableCard is None:
+            return
         state = self._browserListener.state
         installType, version = self._browserService.connectionSummary
         if state.status == ListenStatus.OFF:
@@ -378,6 +417,8 @@ class SettingPage(ui.Node):
         self.browserEnableCard.setContent(content)
 
     def _refreshAria2Status(self, *_args) -> None:
+        if self.aria2EnableCard is None:
+            return
         state = self._aria2RpcListener.state
         if state.status == ListenStatus.OFF:
             content = T("兼容 Aria2 JSON-RPC 协议，可接收外部工具发送的下载链接")

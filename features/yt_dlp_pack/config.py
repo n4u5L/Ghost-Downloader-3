@@ -18,9 +18,6 @@ from app.install import installArchive, installFile
 from app.sources import Repo, fetchLatestRelease, fetchPypiFile, fetchPypiReleases, fetchReleaseAsset
 from app.update import parseVersion
 
-if TYPE_CHECKING:
-    from PySide6.QtWidgets import QWidget
-
 QJS_REPO = Repo("quickjs-ng/quickjs", mirrors={"gitcode": "XiaoYouChR/quickjs-mirror"})
 COOKIE_DOMAIN = ".youtube.com"
 AUTH_COOKIE_NAMES = ("LOGIN_INFO", "SAPISID", "__Secure-1PAPISID", "__Secure-3PAPISID")
@@ -81,55 +78,6 @@ class YtDlpConfig(PackConfig):
     shouldEmbedMetadata = ConfigItem("YtDlp", "EmbedMetadata", True, BoolValidator())
     shouldEmbedChapters = ConfigItem("YtDlp", "EmbedChapters", True, BoolValidator())
 
-    def settingGroups(self, parent: QWidget) -> list:
-        from qfluentwidgets import FluentIcon, SwitchSettingCard
-        from app.view.components.setting_card_group import CollapsibleSettingCardGroup
-        from app.view.components.setting_cards import SelectFolderSettingCard
-
-        group = CollapsibleSettingCardGroup(self.tr("YouTube 下载"), "ytdlp", parent)
-
-        runtimeCard = self.createRuntimeCard(youTubeRuntime, group)
-        cards = [runtimeCard]
-
-        if not IS_ANDROID:
-            installFolderCard = SelectFolderSettingCard(
-                ytDlpConfig.installFolder, f"{APP_DATA_DIR}/YtDlp",
-                self.tr("运行环境安装目录"),
-                group,
-            )
-            installFolderCard.pathChanged.connect(runtimeCard._onInstallFolderChanged)
-            cards.insert(0, installFolderCard)
-
-        from .setting_cards import CookieSettingCard
-        cards.append(CookieSettingCard(group))
-
-        cards.extend([
-            SwitchSettingCard(
-                FluentIcon.VIDEO,
-                self.tr("优先 MP4 格式"),
-                self.tr("优先选择 H.264/MP4 编码，避免输出 WebM/MKV"),
-                self.shouldPreferMp4,
-                group,
-            ),
-            SwitchSettingCard(
-                FluentIcon.INFO,
-                self.tr("嵌入元数据"),
-                self.tr("下载完成后将标题、作者等信息嵌入文件"),
-                self.shouldEmbedMetadata,
-                group,
-            ),
-            SwitchSettingCard(
-                FluentIcon.BOOK_SHELF,
-                self.tr("嵌入章节"),
-                self.tr("下载完成后将章节标记嵌入文件"),
-                self.shouldEmbedChapters,
-                group,
-            ),
-        ])
-
-        group.addSettingCards(cards)
-        runtimeCard.refreshStatus()
-        return [group]
 
 
 ytDlpConfig = YtDlpConfig()

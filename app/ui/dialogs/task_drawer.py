@@ -1,7 +1,4 @@
-"""任务详情，对应 Qt 界面的 TaskDrawer。
-
-bkit 没有从侧边滑出的抽屉，改用居中的对话框；功能包的详情卡片依赖 Qt，未移植。
-"""
+"""任务信息和功能包详情。"""
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -16,7 +13,7 @@ from app.format import toReadableSize, toReadableTime
 from app.models.task import TaskStatus
 from app.platform.shell import clipboardText, revealInFolder, setClipboardText
 from app.ui.cards.task_cards import isMultiFile, toFileIcon
-from app.ui.components.category_settings import toCategoryName
+from app.ui.components.categories import toCategoryName
 from app.ui.components.message_box import MessageBoxBase
 from app.i18n import toLocalizedError, tr
 from app.ui.icons import buildIcon, buildIconButton
@@ -285,16 +282,20 @@ class FileListCard(DetailCard):
 class TaskDrawer(MessageBoxBase):
 
     def __init__(self, task: Task, taskService: TaskService, categoryService: CategoryService, host: ui.Node,
-                 uiLoop: UiLoop) -> None:
+                 uiLoop: UiLoop, packView) -> None:
         super().__init__(host)
         self._task = task
         self._taskService = taskService
+        self._host = host
+        self._packView = packView
+        self._editDialog = None
         self.cards: list[ui.Node] = [
             HeaderCard(task, categoryService),
             ErrorBar(task),
             InfoCard(task, categoryService),
             ChecksumCard(task),
             FileListCard(task),
+            *packView.details(task),
         ]
         self._refreshTimer = SingleShotTimer(uiLoop.post, REFRESH_INTERVAL, self._onRefreshTimeout)
         self._initWidget()
@@ -307,6 +308,13 @@ class TaskDrawer(MessageBoxBase):
         closeButton = ui.IconButton(ui.MaterialIcon.CLOSE, self._onCancelClicked)
         self.contentLayout.insert_child(0, row(text(tr("TaskDrawer", "任务详情"), fontSize=20, fontWeight=600),
                                                ui.Spacer(), closeButton, flex=1))
+        if self._task.canEdit:
+            self.contentLayout.insert_child(1, ui.Button(tr("LiveEditDialog", "编辑任务"), self._onEditClicked))
+
+    def _onEditClicked(self):
+        from app.ui.dialogs.task_edit import TaskEditDialog
+        self._editDialog = TaskEditDialog(self._task, self._packView, self._host)
+        self._editDialog.open()
 
     def _bind(self) -> None:
         self._taskService.taskRemoved.connect(self._onTaskRemoved)

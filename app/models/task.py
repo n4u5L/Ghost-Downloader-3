@@ -444,6 +444,10 @@ class Task:
         self.name = newTask.name
         self.fileSize = newTask.fileSize
         self.steps = newTask.steps
+        self.files = newTask.files
+        for name in newTask.__dataclass_fields__:
+            if name not in Task.__dataclass_fields__:
+                setattr(self, name, getattr(newTask, name))
         for step in self.steps:
             step._bindTask(self)
         self.updateStatus()

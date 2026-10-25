@@ -117,9 +117,7 @@ def startApp(uiLoop, coroutineRunner, engine) -> int:
     from app.ui.dialogs.name_conflict import NameConflictPrompt
     from app.i18n import tr
     from app.ui.shell.clipboard_listener import ClipboardListener
-    from app.ui.shell.desktop_notification import (
-        init, notifyDiskSpaceInsufficient, notifyParseFailed, notifyTaskCompleted,
-    )
+    from app.ui.shell.desktop_notification import DesktopNotifications
     from app.ui.shell.tray import SystemTrayIcon
     from app.ui.windows.main_window import ICON_PATH, MainWindow
 
@@ -150,7 +148,7 @@ def startApp(uiLoop, coroutineRunner, engine) -> int:
 
     window = MainWindow(taskService, featureService, browserService, engine.browserListener, engine.aria2RpcListener,
                         engine.categoryService, engine.speedMeter, coroutineRunner, plan, updateService,
-                        clipboardListener, loadCrx, requestQuit, uiLoop)
+                        engine.runtimeStatusService, clipboardListener, loadCrx, requestQuit, uiLoop)
     nameConflictPrompt = NameConflictPrompt(engine.nameConflictQueue, window.surface)  # noqa: F841
     if isSilentLaunch:
         # 开机自启等静默启动：只留托盘图标
@@ -189,10 +187,10 @@ def startApp(uiLoop, coroutineRunner, engine) -> int:
         lambda state: state.status == ListenStatus.FAILED and show().onAria2ListenFailed(state.error))
     clipboardListener.urlsDetected.connect(lambda urls: show().addUrls(urls))
     uiLoop.exceptionCaught.connect(lambda message: show().onExceptionCaught(message))
-    coroutineRunner.submit(init(coroutineRunner.submit))
-    taskService.taskCompleted.connect(notifyTaskCompleted)
-    taskService.diskSpaceInsufficient.connect(notifyDiskSpaceInsufficient)
-    engine.aria2RpcService.parseFailed.connect(notifyParseFailed)
+    notifications = DesktopNotifications(coroutineRunner.submit)
+    taskService.taskCompleted.connect(notifications.sendTaskCompleted)
+    taskService.diskSpaceInsufficient.connect(notifications.sendDiskSpaceInsufficient)
+    engine.aria2RpcService.parseFailed.connect(notifications.sendParseFailed)
     taskService.taskStarted.connect(lambda _: hold())
     taskService.tasksAllCompleted.connect(release)
     updateService.changed.connect(onUpdateChanged)

@@ -128,23 +128,8 @@ class FtpPack(FeaturePack):
     proxySchemes = PROXY_SCHEMES
     parsers = [FtpParser]
 
-    def taskCardClass(self, task: Task) -> type | None:
-        from .cards import FtpTaskCard
-        return FtpTaskCard
 
-    def draftCardClass(self, task: Task) -> type | None:
-        from .cards import FtpDraftCard
-        return FtpDraftCard
 
     def uriSchemes(self) -> list[UriScheme]:
         return [UriScheme("ftp", "FTP"), UriScheme("ftps", "FTPS")]
 
-    def optionCards(self, task, parent=None):
-        from app.view.components.option_cards import OutputFolderCard, SubworkerCountCard
-        step = task.steps[0] if task.steps else None
-        if step is None:
-            return []
-        return [
-            OutputFolderCard(parent, initial=task.outputFolder),
-            SubworkerCountCard(parent, initial=step.subworkerCount),
-        ]

@@ -63,13 +63,7 @@ class YouTubePack(FeaturePack):
     capturedLinks = N("YouTubePack", "YouTube 视频")
     parsers = [YouTubeParser]
 
-    def taskCardClass(self, task: Task) -> type | None:
-        from .cards import YtDlpTaskCard
-        return YtDlpTaskCard
 
-    def draftCardClass(self, task: Task) -> type | None:
-        from .cards import YtDlpDraftCard
-        return YtDlpDraftCard
 
     def __init__(self, services):
         self.config = ytDlpConfig
@@ -78,8 +72,3 @@ class YouTubePack(FeaturePack):
     def runtimes(self):
         return [youTubeRuntime]
 
-    def optionCards(self, task, parent=None):
-        from app.view.components.option_cards import OutputFolderCard
-        return [
-            OutputFolderCard(parent, initial=task.outputFolder),
-        ]

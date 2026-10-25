@@ -41,7 +41,7 @@ def T(text: str) -> str:
 class TaskDraftDialog(MessageBoxBase):
 
     def __init__(self, draft: TaskDraft, featureService: FeatureService, categoryService: CategoryService,
-                 probeConflict: Callable[[Task], Path | None], host: ui.Node, uiLoop: UiLoop) -> None:
+                 probeConflict: Callable[[Task], Path | None], host: ui.Node, uiLoop: UiLoop, packViews) -> None:
         super().__init__(host)
         self._draft = draft
         self._featureService = featureService
@@ -49,6 +49,8 @@ class TaskDraftDialog(MessageBoxBase):
         self._probeConflict = probeConflict
         self._isSettingText = False
         self._uiLoop = uiLoop
+        self._packViews = packViews
+        self._cardsByUrl = {}
         self._batchDialog: BatchUrlDialog | None = None
         self._parseTimer = SingleShotTimer(uiLoop.post, PARSE_INTERVAL, self._onParseNeeded)
         self.infoBars = InfoBarArea(uiLoop)
@@ -129,6 +131,10 @@ class TaskDraftDialog(MessageBoxBase):
 
     def close(self, isAccepted: bool, autoStart: bool = True) -> None:
         if isAccepted:
+            if not all([card.applyOptions() for card in self._cardsByUrl.values()]):
+                return
+            for url, card in self._cardsByUrl.items():
+                self._draft.setUrlOptions(url, card.overrides())
             self._parseTimer.stop()
             self._onParseNeeded()
             if not self._draft.canConfirm():
@@ -173,7 +179,11 @@ class TaskDraftDialog(MessageBoxBase):
             self.progressSlot.remove_child(0)
 
     def _onParseSucceeded(self, url: str, task: Task) -> None:
-        card = DraftCard(task, self._categoryService, self._probeConflict)
+        previous = self._cardsByUrl.get(url)
+        if previous:
+            previous.dispose()
+        card = self._packViews.byTask(task).draftCard(task, self._probeConflict)
+        self._cardsByUrl[url] = card
         card.categoryPicked.connect(lambda categoryId: self._draft.setUrlCategory(url, categoryId))
         self.draftGroup.addCard(url, card)
         self._refreshStats()
@@ -184,10 +194,17 @@ class TaskDraftDialog(MessageBoxBase):
         self.infoBars.add(T("链接解析失败"), f"{displayUrl}\n{toLocalizedError(error)}", icon=InfoBarIcon.ERROR)
 
     def _onItemsChanged(self) -> None:
+        for url, card in self._cardsByUrl.items():
+            if url not in self._draft.urls():
+                card.dispose()
+        self._cardsByUrl = {url: card for url, card in self._cardsByUrl.items() if url in self._draft.urls()}
         self.draftGroup.setUrls(self._draft.urls())
         self._refreshStats()
 
     def _onCleared(self) -> None:
+        for card in self._cardsByUrl.values():
+            card.dispose()
+        self._cardsByUrl.clear()
         self.draftGroup.clear()
         self.draftGroup.updateStats(0, 0, 0)
 

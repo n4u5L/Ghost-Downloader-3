@@ -13,7 +13,8 @@ from app.services.task_service import NameConflictChoice, TaskService
 
 
 class Engine:
-    def __init__(self, coroutineRunner, fileWatcher, loadCrx, extensionFolder, deleteRecoverably) -> None:
+    def __init__(self, coroutineRunner, fileWatcher, loadCrx, extensionFolder, deleteRecoverably,
+                 featureServiceType=FeatureService) -> None:
         self.coroutineRunner = coroutineRunner
         self.categoryService = CategoryService()
         self.speedMeter = SpeedMeter(coroutineRunner)
@@ -23,7 +24,7 @@ class Engine:
                                                    coroutineRunner.post)
         self.taskService.nameConflicted.connect(self.nameConflictQueue.add)
         self.runtimeStatusService = RuntimeStatusService(coroutineRunner)
-        self.featureService = FeatureService(self.taskService, self.categoryService, coroutineRunner,
+        self.featureService = featureServiceType(self.taskService, self.categoryService, coroutineRunner,
                                              self.runtimeStatusService)
 
         self.browserService = BrowserService(coroutineRunner, self.taskService, self.speedMeter.speedChanged,

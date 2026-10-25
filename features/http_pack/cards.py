@@ -1,99 +1,77 @@
-from PySide6.QtCore import Qt, QRectF, QTimer
-from PySide6.QtGui import QColor, QPainter, QPaintEvent
-from PySide6.QtWidgets import QWidget
-from qfluentwidgets import isDarkTheme, themeColor
+from bkit import ui
 
-from app.view.cards.task_cards import TaskCard
-from .task import HttpTaskStep
-
-FILL_EASING = 0.25
+from app.models.task import TaskStatus
+from app.ui.cards.task_cards import TaskCard
+from app.ui.theme import schemeColor, statusColor
 
 
-class SegmentedProgressBar(QWidget):
-    def __init__(self, step: HttpTaskStep, parent=None):
-        super().__init__(parent)
-        self._step = step
-        self._isPaused = False
-        self._isError = False
-        self._fillProgress: dict[int, float] = {}
-        self._spans: list[tuple[float, float]] = []
-        self._fillTimer = QTimer(self, interval=16)
-        self._fillTimer.timeout.connect(self._onFillTimeout)
+class SegmentedProgressBar(ui.Node):
+    def __init__(self, task, uiLoop):
+        super().__init__()
+        self.task = task
+        self._uiLoop = uiLoop
+        self._timer = None
+        self._shown = {}
 
-    def setValue(self, value: float):
-        self._fillTimer.start()
-        self._onFillTimeout()
+    def on_measure(self, constraints):
+        width = constraints.max_width if constraints.has_bounded_width else self.dp(4096)
+        return constraints.constrain(width, self.dp(4))
 
-    def _onFillTimeout(self):
-        live = {sw.start: sw.position for sw in list(self._step.subworkers)}
-        fresh = not self._fillProgress
-        settled = True
-        for start, target in live.items():
-            shown = self._fillProgress.get(start, target if fresh else start)
-            if target - shown > 1:
-                self._fillProgress[start] = shown + (target - shown) * FILL_EASING
-                settled = False
-            else:
-                self._fillProgress[start] = target
-        self._fillProgress = {start: self._fillProgress[start] for start in live}
-        self._spans = self._toMergedSpans()
-        if not self._spans and self._step.receivedBytes > 0:
-            self._spans = [(0, self._step.receivedBytes)]
-        if settled:
-            self._fillTimer.stop()
-        self.update()
+    def on_attach(self):
+        super().on_attach()
+        self._tick()
 
-    def setError(self, isError: bool):
-        self._isError = isError
-        if not isError:
-            self._isPaused = False
-        self.update()
+    def on_detach(self):
+        if self._timer:
+            self._timer.cancel()
+            self._timer = None
+        super().on_detach()
 
-    def pause(self):
-        self._isPaused = True
-        self.update()
+    def _tick(self):
+        self._timer = None
+        workers = [worker for step in self.task.steps for worker in list(getattr(step, "subworkers", ()))]
+        fresh = not self._shown
+        shown = {}
+        for worker in workers:
+            previous = self._shown.get(worker.start, worker.position if fresh else worker.start)
+            shown[worker.start] = previous + (worker.position - previous) * 0.25
+        self._shown = shown
+        self.request_draw()
+        if self.is_attached and self.task.status == TaskStatus.RUNNING:
+            self._timer = self._uiLoop.post(self._tick, 0.016)
 
-    def barColor(self) -> QColor:
-        if self._isPaused:
-            return QColor(252, 225, 0) if isDarkTheme() else QColor(157, 93, 0)
-        if self._isError:
-            return QColor(255, 153, 164) if isDarkTheme() else QColor(196, 43, 28)
-        return themeColor()
+    def refresh(self):
+        if self.is_attached and self._timer is None:
+            self._tick()
+        else:
+            self.request_draw()
 
-    def _toMergedSpans(self) -> list[tuple[float, float]]:
-        intervals = sorted(
-            (start, shown) for start, shown in self._fillProgress.items() if shown > start
-        )
-        merged: list[tuple[float, float]] = []
-        for start, end in intervals:
-            if merged and start <= merged[-1][1]:
-                merged[-1] = (merged[-1][0], max(merged[-1][1], end))
-            else:
-                merged.append((start, end))
-        return merged
-
-    def paintEvent(self, event: QPaintEvent):
-        fileSize = self._step.fileSize
-        if fileSize <= 0 or not self._spans:
-            return
-
-        painter = QPainter(self)
-        painter.setRenderHints(QPainter.RenderHint.Antialiasing)
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(self.barColor())
-
-        width = self.width()
-        height = self.height()
-        radius = height / 2
-        for start, end in self._spans:
-            x = start / fileSize * width
-            w = (end - start) / fileSize * width
-            painter.drawRoundedRect(QRectF(x, 0, w, height), radius, radius)
+    def on_draw(self, canvas):
+        super().on_draw(canvas)
+        width, height = self.measured_size
+        total = max(self.task.fileSize, 1)
+        color = statusColor("error") if self.task.status == TaskStatus.FAILED else (
+            statusColor("warning") if self.task.status == TaskStatus.PAUSED else schemeColor("primary"))
+        spans = list(self._shown.items())
+        if not spans:
+            spans = [(0, self.task.currentSnapshot()[2])]
+        for start, end in spans:
+            if end > start:
+                canvas.draw_rect(width * start / total, 0, min(width, width * end / total), height, color)
 
 
 class HttpTaskCard(TaskCard):
-    def _createProgressBar(self) -> QWidget:
-        step = self.task.steps[0] if self.task.steps else None
-        if isinstance(step, HttpTaskStep) and step.canUseRangeRequests and step.fileSize > 0 and step.subworkerCount > 1:
-            return SegmentedProgressBar(step, self)
-        return super()._createProgressBar()
+    def __init__(self, *args, uiLoop):
+        self._uiLoop = uiLoop
+        super().__init__(*args)
+
+    def _refreshProgress(self, task, progress):
+        if task.status == TaskStatus.COMPLETED or task.fileSize <= 0:
+            return super()._refreshProgress(task, progress)
+        if self._progressKind != "segments":
+            while self.progressSlot.children:
+                self.progressSlot.remove_child(0)
+            self.progressBar = SegmentedProgressBar(task, self._uiLoop)
+            self.progressSlot.append_child(self.progressBar)
+            self._progressKind = "segments"
+        self.progressBar.refresh()

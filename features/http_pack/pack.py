@@ -233,28 +233,6 @@ class HttpPack(FeaturePack):
     capturedLinks = N("HttpPack", "文件直链（视频、音频、压缩包、安装包、镜像、文档）")
     parsers = [HttpParser]
 
-    def taskCardClass(self, task: Task) -> type | None:
-        from .cards import HttpTaskCard
-        return HttpTaskCard
 
-    def optionCards(self, task, parent=None):
-        from app.view.components.option_cards import (
-            ClientProfileCard, HeadersEditCard, OutputFolderCard, SubworkerCountCard,
-        )
-        step = task.steps[0] if task.steps else None
-        if not isinstance(step, HttpTaskStep):
-            return []
-        return [
-            OutputFolderCard(parent, initial=task.outputFolder),
-            HeadersEditCard(parent, initial=step.headers),
-            ClientProfileCard(parent, initial=step.clientProfile, initialUserAgent=step.userAgent),
-            SubworkerCountCard(parent, initial=step.subworkerCount),
-        ]
 
-    def editCards(self, task, parent=None):
-        from app.view.components.option_cards import UrlEditCard
-        return [
-            UrlEditCard(parent, initial=task.url),
-            *self.optionCards(task, parent),
-        ]
 

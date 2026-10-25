@@ -159,22 +159,12 @@ class BilibiliPack(FeaturePack):
     config = bilibiliConfig
     parsers = [BilibiliParser]
 
-    def taskCardClass(self, task: Task) -> type | None:
-        from .cards import BilibiliTaskCard
-        return BilibiliTaskCard
 
-    def draftCardClass(self, task: Task) -> type | None:
-        from .cards import BilibiliDraftCard
-        return BilibiliDraftCard
 
     def __init__(self, services):
         super().__init__(services)
         self.account = BilibiliAccount(services.coroutineRunner)
-        self.config._account = self.account
 
-    def optionCards(self, task, parent=None):
-        from app.view.components.option_cards import OutputFolderCard
-        return [OutputFolderCard(parent, initial=task.outputFolder)]
 
     async def activate(self):
         self.account.fetchAccountInfo()

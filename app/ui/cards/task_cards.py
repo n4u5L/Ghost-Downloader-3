@@ -13,16 +13,16 @@ from app.models.task import SpecialFileSize, TaskStatus
 from app.platform.filesystem import isExisting, isFolder
 from app.platform.shell import openFile, revealInFolder
 from app.signal import Signal
-from app.ui.components.category_settings import addCategoryItems
+from app.ui.components.categories import addCategoryItems
 from app.ui.components.menu import buildMenu, buildMenuAction, openMenuAt
 from app.ui.components.message_box import MessageBox
-from app.ui.dialogs.file_select import FileSelectDialog
 from app.i18n import toLocalizedError, tr
 from app.ui.icons import buildIcon, buildIconButton, loadIcon, toCategoryIcon
 from app.ui.layout import Slot, checkBox, column, isClick, row, text
 from app.ui.theme import colorOf, statusColor
 
 if TYPE_CHECKING:
+    from app.ui.dialogs.file_select import FileSelectDialog
     from app.models.task import Task
     from app.services.category_service import CategoryService
     from app.services.task_service import TaskService
@@ -339,6 +339,7 @@ class TaskCard(ui.Node):
         self.refresh()
 
     def _onSelectFilesClicked(self) -> None:
+        from app.ui.dialogs.file_select import FileSelectDialog
         dialog = FileSelectDialog(self._task, self._categoryService, self)
 
         def onAccepted() -> None:

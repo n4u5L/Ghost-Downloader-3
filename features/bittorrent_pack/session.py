@@ -213,7 +213,10 @@ class BTSession:
                 pass
 
     async def probeDhtNodes(self) -> int | None:
-        if self._session is None or not self._session.is_dht_running():
+        if not bittorrentConfig.enableDht.value:
+            return None
+        self._ensureSession()
+        if not self._session.is_dht_running():
             return None
         if self._statsWaiter is None or self._statsWaiter.done():
             self._statsWaiter = asyncio.get_running_loop().create_future()

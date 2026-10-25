@@ -200,9 +200,13 @@ class SpinBoxSettingCard(SettingCard):
         self._saveTimer.stop()
         value = self.lineEdit.state.text.strip()
         minimum, maximum = self._configItem.range
-        self.lineEdit.is_error = not value.isdigit() or not minimum <= int(value) * self._unit <= maximum
-        if not self.lineEdit.is_error:
-            cfg.set(self._configItem, int(value) * self._unit)
+        try:
+            number = int(value) * self._unit
+            self.lineEdit.is_error = not minimum <= number <= maximum
+            if not self.lineEdit.is_error:
+                cfg.set(self._configItem, number)
+        except ValueError:
+            self.lineEdit.is_error = True
 
 
 class LineEditSettingCard(SettingCard):

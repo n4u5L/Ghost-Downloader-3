@@ -254,16 +254,7 @@ class M3U8Pack(FeaturePack):
     capturedLinks = N("M3U8Pack", "M3U8 / DASH 流媒体")
     parsers = [M3U8Parser]
 
-    def taskCardClass(self, task: Task) -> type | None:
-        if getattr(task, "isLive", False):
-            from .cards import M3U8LiveTaskCard
-            return M3U8LiveTaskCard
-        from .cards import M3U8TaskCard
-        return M3U8TaskCard
 
-    def draftCardClass(self, task: Task) -> type | None:
-        from .cards import M3U8DraftCard
-        return M3U8DraftCard
 
     def __init__(self, services):
         self.config = m3u8Config
@@ -272,45 +263,7 @@ class M3U8Pack(FeaturePack):
     def runtimes(self):
         return [m3u8Runtime]
 
-    def optionCards(self, task, parent=None):
-        from app.view.components.option_cards import HeadersEditCard, OutputFolderCard
-        from .cards import StreamSelectCard, RecordLimitCard, DecryptionKeyCard, MuxImportCard
-        from .task import M3U8TaskStep
 
-        step = task.steps[0] if task.steps else None
-        if not isinstance(step, M3U8TaskStep):
-            return []
-
-        cards = [
-            OutputFolderCard(parent, initial=task.outputFolder),
-            HeadersEditCard(parent, initial=step.headers),
-        ]
-        if len(task.streams) > 1:
-            cards.append(StreamSelectCard(parent, streams=task.streams, initial=step.selectVideo))
-        if task.isLive:
-            cards.append(RecordLimitCard(parent, initial=step.recordLimit))
-        cards.append(DecryptionKeyCard(parent, keys=step.decryptionKeys, keyTextFile=step.decryptionKeyFile))
-        cards.append(MuxImportCard(parent, initial=step.muxImports))
-        return cards
-
-    def editCards(self, task, parent=None):
-        from app.view.components.option_cards import HeadersEditCard, OutputFolderCard
-        from .cards import RecordLimitCard, DecryptionKeyCard, MuxImportCard
-        from .task import M3U8TaskStep
-
-        step = task.steps[0] if task.steps else None
-        if not isinstance(step, M3U8TaskStep):
-            return []
-
-        cards = [
-            OutputFolderCard(parent, initial=task.outputFolder),
-            HeadersEditCard(parent, initial=step.headers),
-        ]
-        if task.isLive:
-            cards.append(RecordLimitCard(parent, initial=step.recordLimit))
-        cards.append(DecryptionKeyCard(parent, keys=step.decryptionKeys, keyTextFile=step.decryptionKeyFile))
-        cards.append(MuxImportCard(parent, initial=step.muxImports))
-        return cards
 
     def fileTypes(self):
         return [

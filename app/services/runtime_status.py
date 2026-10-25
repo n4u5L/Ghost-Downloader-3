@@ -97,6 +97,26 @@ class RuntimeStatusService:
         self._statuses[runtimeId] = status
         self.statusChanged.emit(status)
 
+    def delete(self, runtime: BinaryRuntime) -> None:
+        import asyncio
+        self.cancelInstall(runtime)
+        runtimeId = runtime.runtimeId
+        workId = self._workIds.pop(runtimeId, None)
+        if workId:
+            self._coroutineRunner.cancel(workId)
+        status = RuntimeStatus(runtimeId, runtime.name, path=runtime.path(), isBusy=True)
+        self._statuses[runtimeId] = status
+        self.statusChanged.emit(status)
+        self._workIds[runtimeId] = self._coroutineRunner.submit(asyncio.to_thread(runtime.delete),
+                                      done=lambda _: self.invalidate(runtime),
+                                      failed=lambda error: self._onDeleteFailed(runtime, error))
+
+    def _onDeleteFailed(self, runtime, error):
+        self._workIds.pop(runtime.runtimeId, None)
+        status = RuntimeStatus(runtime.runtimeId, runtime.name, path=runtime.path(), error=toTaskError(error))
+        self._statuses[runtime.runtimeId] = status
+        self.statusChanged.emit(status)
+
     async def _runInstall(self, runtime: BinaryRuntime, version: str = "") -> None:
         runtimeId = runtime.runtimeId
 

@@ -16,19 +16,20 @@ from app.services.update_service import UpdateState
 from app.ui.components.editors import SearchLineEdit
 from app.ui.components.info_bar import InfoBarArea, InfoBarIcon
 from app.ui.components.message_box import MessageBox
-from app.ui.components.progress_toast import ProgressToast
-from app.ui.dialogs.release_info import ReleaseInfoDialog
-from app.ui.dialogs.task_draft import TaskDraftDialog
 from app.i18n import toLocalizedError, tr
 from app.ui.icons import buildButton, buildIconButton, loadIcon
 from app.ui.layout import Slot, checkBox, column, overlay, row, text
 from app.ui.loop import UiLoop
-from app.ui.pages.setting_page import Quit, SettingPage
 from app.ui.pages.task_page import TaskPage
+from app.ui.pack import PackUiServices, PackViews
 from app.ui.theme import applyColorScheme, createTheme, schemeColor
 from app.update import fetchAssetUrl, fetchRelease
 
 if TYPE_CHECKING:
+    from app.ui.components.progress_toast import ProgressToast
+    from app.ui.dialogs.release_info import ReleaseInfoDialog
+    from app.ui.dialogs.task_draft import TaskDraftDialog
+    from app.ui.pages.setting_page import Quit, SettingPage
     from app.models.task import Task, TaskError
     from app.services.browser_service import BrowserService, PairRequest
     from app.services.category_service import CategoryService
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
     from app.services.feature_service import FeatureService
     from app.services.plan import Plan
     from app.services.port_listener import PortListener
+    from app.services.runtime_status import RuntimeStatusService
     from app.services.speed_meter import SpeedMeter
     from app.services.task_service import TaskService
     from app.services.update_service import UpdateInfo, UpdateService
@@ -80,6 +82,7 @@ class MainWindow:
     def __init__(self, taskService: TaskService, featureService: FeatureService, browserService: BrowserService,
                  browserListener: PortListener, aria2RpcListener: PortListener, categoryService: CategoryService,
                  speedMeter: SpeedMeter, coroutineRunner: CoroutineRunner, plan: Plan, updateService: UpdateService,
+                 runtimeStatusService: RuntimeStatusService,
                  clipboardListener: ClipboardListener, loadCrx: Callable[[], bytes], requestQuit: Quit,
                  uiLoop: UiLoop) -> None:
         self._taskService = taskService
@@ -92,10 +95,15 @@ class MainWindow:
         self._coroutineRunner = coroutineRunner
         self._plan = plan
         self._updateService = updateService
+        self._runtimeStatusService = runtimeStatusService
         self._clipboardListener = clipboardListener
         self._loadCrx = loadCrx
         self._requestQuit = requestQuit
         self._uiLoop = uiLoop
+        self._packViews = PackViews(featureService.packs, PackUiServices(
+            taskService, categoryService, coroutineRunner, runtimeStatusService, uiLoop))
+        self._packPages = self._packViews.pages()
+        self._extraPages = {}
         self._draft = TaskDraft(coroutineRunner, featureService)
         self._settingPage: SettingPage | None = None
         self._messageBox: MessageBox | None = None
@@ -114,6 +122,8 @@ class MainWindow:
                 self.navigationInterface.add_flexible_space()
             # 与 MSFluentWindow 一样，每一项都显示文字
             self.navigationInterface.add_item(loadIcon(icon), label).set_always_show_label(True)
+        for title, icon, build in self._packPages:
+            self.navigationInterface.add_item(loadIcon(icon), title).set_always_show_label(True)
         # 对应 Qt 界面标题栏正中的搜索框，随页面换占位文字
         self.searchEdit = SearchLineEdit()
         self.searchBox = ui.Box()
@@ -129,7 +139,7 @@ class MainWindow:
         self.searchBar.append_child(self.searchSlot)
         self.infoBars = InfoBarArea(self._uiLoop)
         self.taskPage = TaskPage(self._taskService, self._categoryService, self._speedMeter, self._plan,
-                                 self._clipboardListener.setUrls, self.infoBars, self._uiLoop)
+                                 self._clipboardListener.setUrls, self.infoBars, self._uiLoop, self._packViews)
         self.stackedWidget = Slot(self.taskPage)
         self._setPage(TASK_PAGE)
 
@@ -180,25 +190,32 @@ class MainWindow:
 
     @cached_property
     def _draftDialog(self) -> TaskDraftDialog:
+        from app.ui.dialogs.task_draft import TaskDraftDialog
         return TaskDraftDialog(self._draft, self._featureService, self._categoryService,
-                               self._taskService.probeConflict, self.surface, self._uiLoop)
+                               self._taskService.probeConflict, self.surface, self._uiLoop, self._packViews)
 
     def _setPage(self, index: int) -> None:
         if index == SETTING_PAGE:
             if self._settingPage is None:
+                from app.ui.pages.setting_page import SettingPage
                 self._settingPage = SettingPage(
                     self._featureService, self._browserService, self._browserListener, self._aria2RpcListener,
-                    self._coroutineRunner, self._categoryService, self._updateService, self._loadCrx,
-                    self._requestQuit, self.infoBars, self._uiLoop,
+                    self._coroutineRunner, self._categoryService, self._updateService, self._runtimeStatusService,
+                    self._loadCrx,
+                    self._requestQuit, self.infoBars, self._uiLoop, self._packViews,
                 )
             page = self._settingPage
+        elif index >= len(NAVIGATION_ICONS):
+            if index not in self._extraPages:
+                self._extraPages[index] = self._packPages[index - len(NAVIGATION_ICONS)][2](self.surface)
+            page = self._extraPages[index]
         else:
             page = self.taskPage
         self.stackedWidget.setChild(page)
         self.navigationInterface.selected_index = index
         self._updateSearchTarget(page)
 
-    def _updateSearchTarget(self, page: TaskPage | SettingPage) -> None:
+    def _updateSearchTarget(self, page: ui.Node) -> None:
         self.searchEdit.clear()
         placeholder = getattr(page, "searchPlaceholder", None)
         if placeholder is not None:
@@ -267,6 +284,7 @@ class MainWindow:
                                                          UpdateState.FAILED):
             return
         if self._progressToast is None:
+            from app.ui.components.progress_toast import ProgressToast
             self._progressToast = ProgressToast(self.infoBars, lambda: self._updateService.download("app"),
                                                 self._requestQuit)
         self._progressToast.setInfo(info)
@@ -275,6 +293,7 @@ class MainWindow:
         self._coroutineRunner.submit(fetchRelease(), done=self._onReleaseFetched)
 
     def _onReleaseFetched(self, release: Release) -> None:
+        from app.ui.dialogs.release_info import ReleaseInfoDialog
         dialog = ReleaseInfoDialog(release, self.surface)
 
         def onAccepted() -> None:

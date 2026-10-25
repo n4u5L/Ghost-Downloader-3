@@ -12,15 +12,28 @@ from time import monotonic
 from bkit import ui
 from loguru import logger
 
+from app.platform.process_memory import loadPrivateWorkingSet
 from app.signal import Signal
 
 WM_NULL = 0x0000
 # 无定时器时也定期醒来，让 Ctrl+C 等信号得到处理
 MAX_WAIT = 0.5
+TITLE_INTERVAL = 0.5
 
 user32 = ctypes.WinDLL("user32")
 user32.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
 user32.PostMessageW.restype = wintypes.BOOL
+
+
+def toStatsTitle(title: str, stats: ui.FrameStats | None, memory: int | None) -> str:
+    if stats is None:
+        frame = "no frame yet"
+    else:
+        frame = (f"frame peak {stats.frame_ms:.1f} ms | layout {stats.layout_ms:.1f} "
+                 f"record {stats.record_ms:.1f} move {stats.move_ms:.1f} raster {stats.raster_ms:.1f} "
+                 f"upload {stats.upload_ms:.1f} present {stats.present_ms:.1f} | {stats.pixels} px")
+    workingSet = "n/a" if memory is None else f"{memory / (1024 * 1024):.1f} MiB"
+    return f"{title} | {frame} | private working set {workingSet}"
 
 
 class Timer:
@@ -87,12 +100,21 @@ class UiLoop:
     def run(self, window: ui.Window) -> None:
         self._hwnd = window.handle
         self._isRunning = True
+        title = window.title
+        nextTitleUpdate = monotonic() + TITLE_INTERVAL
+        shownStats: ui.FrameStats | None = None
         try:
             while self._isRunning:
                 self._runDue()
                 try:
                     if not window.process_events(self._waitTime()):
                         break
+                    now = monotonic()
+                    if now >= nextTitleUpdate:
+                        nextTitleUpdate = now + TITLE_INTERVAL
+                        shownStats = window.take_frame_stats() or shownStats
+                        # 原生标题更新不会触发 bkit 内容重绘，空闲时保留上一帧统计。
+                        window.title = toStatsTitle(title, shownStats, loadPrivateWorkingSet())
                 except Exception as e:
                     self._onCallbackFailed(e, "bkit callback failed")
         finally:

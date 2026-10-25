@@ -35,22 +35,6 @@ def buildAssetTarget() -> str:
 class FFmpegConfig(PackConfig):
     installFolder = ConfigItem("FFmpeg", "InstallFolder", f"{APP_DATA_DIR}/FFmpeg")
 
-    def settingGroups(self, parent: QWidget) -> list[CollapsibleSettingCardGroup]:
-        from app.view.components.setting_card_group import CollapsibleSettingCardGroup
-        from app.view.components.setting_cards import SelectFolderSettingCard
-
-        ffmpegGroup = CollapsibleSettingCardGroup(self.tr("FFmpeg"), "ffmpeg", parent)
-        installFolderCard = SelectFolderSettingCard(
-            ffmpegConfig.installFolder, f"{APP_DATA_DIR}/FFmpeg",
-            self.tr("FFmpeg 安装目录"),
-            ffmpegGroup,
-        )
-        runtimeCard = self.createRuntimeCard(ffmpegRuntime, ffmpegGroup)
-
-        installFolderCard.pathChanged.connect(runtimeCard._onInstallFolderChanged)
-        ffmpegGroup.addSettingCards([installFolderCard, runtimeCard])
-        runtimeCard.refreshStatus()
-        return [ffmpegGroup]
 
 
 ffmpegConfig = FFmpegConfig()

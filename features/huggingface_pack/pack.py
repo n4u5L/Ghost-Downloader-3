@@ -204,14 +204,5 @@ class HuggingFacePack(FeaturePack):
     config = huggingFaceConfig
     parsers = [HuggingFaceParser]
 
-    def taskCardClass(self, task: Task) -> type | None:
-        from .cards import HuggingFaceTaskCard
-        return HuggingFaceTaskCard
 
-    def draftCardClass(self, task: Task) -> type | None:
-        from .cards import HuggingFaceDraftCard
-        return HuggingFaceDraftCard
 
-    def optionCards(self, task, parent=None):
-        from app.view.components.option_cards import OutputFolderCard
-        return [OutputFolderCard(parent, initial=task.outputFolder)]

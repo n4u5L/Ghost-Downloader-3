@@ -12,10 +12,8 @@ from app.platform import file_association
 from app.loader import loadPacks
 
 if TYPE_CHECKING:
-    from app.models.pack import FeaturePack, TaskParser, FileType, UriScheme, PackPage
+    from app.models.pack import FeaturePack, TaskParser, FileType, UriScheme
     from app.models.task import Task
-    from PySide6.QtWidgets import QWidget
-    from app.view.components.setting_card_group import CollapsibleSettingCardGroup
 
 
 class FeatureService:
@@ -27,7 +25,6 @@ class FeatureService:
         self._packs: list[FeaturePack] = []
         self._parsers: list[TaskParser] = []
         self._packByPackId: dict[str, FeaturePack] = {}
-        self._pagePackMap: dict[type, FeaturePack] = {}
 
     @property
     def packs(self) -> list[FeaturePack]:
@@ -63,8 +60,6 @@ class FeatureService:
         self._parsers.sort(key=lambda p: p.priority)
 
         if pack.config:
-            pack.config.createRuntimeCard = self._createRuntimeCard
-            pack.config.submit = self._coroutineRunner.submit
             fileToggle = pack.config.fileAssociationToggle()
             if fileToggle:
                 fileToggle.connect(self._registerAssociations)
@@ -102,70 +97,6 @@ class FeatureService:
         return (parser is not None
                 and parser.pack.packId not in cfg.clipboardIgnoredPacks.value
                 and parser.matchPassive(options))
-
-    # ── Card construction (the seam) ──
-
-    def taskCard(self, task: Task, parent=None):
-        from app.view.cards.task_cards import TaskCard
-        pack = self._packByPackId.get(task.packId)
-        if not pack:
-            return None
-        CardClass = pack.taskCardClass(task) or TaskCard
-        return CardClass(task, self._taskService, self, self._categoryService, parent)
-
-    def draftCard(self, task: Task, parent=None):
-        from app.view.cards.draft_cards import DraftCard
-        pack = self._packByPackId.get(task.packId)
-        if not pack:
-            return None
-        CardClass = pack.draftCardClass(task) or DraftCard
-        return CardClass(task, self._categoryService, self._coroutineRunner, self._taskService.probeConflict, parent)
-
-    def createEditDialog(self, task: Task, parent=None):
-        from app.view.dialogs.edit_task import LiveEditDialog
-        editCards = self.editCards(task, parent)
-        return LiveEditDialog(task, editCards, self._coroutineRunner, self, self._taskService, parent)
-
-    def optionCards(self, task: Task, parent=None) -> list[QWidget]:
-        pack = self._packByPackId.get(task.packId)
-        return pack.optionCards(task, parent) if pack else []
-
-    def editCards(self, task: Task, parent=None) -> list[QWidget]:
-        pack = self._packByPackId.get(task.packId)
-        return pack.editCards(task, parent) if pack else []
-
-    def detailCards(self, task: Task, parent=None) -> list[QWidget]:
-        pack = self._packByPackId.get(task.packId)
-        return pack.detailCards(task, parent) if pack else []
-
-    # ── RuntimeCard factory ──
-
-    def _createRuntimeCard(self, runtime, parent):
-        from app.view.components.setting_cards import RuntimeCard
-        return RuntimeCard(self._runtimeStatusService, runtime, parent)
-
-    # ── Aggregation ──
-
-    def createPage(self, pageClass, parent=None):
-        pack = self._pagePackMap.get(pageClass)
-        if pack:
-            return pageClass(pack, parent)
-        return pageClass(parent)
-
-    def pages(self) -> list[type[PackPage]]:
-        result = []
-        for pack in self._packs:
-            for pageClass in pack.pages():
-                self._pagePackMap[pageClass] = pack
-                result.append(pageClass)
-        return result
-
-    def settingGroups(self, parent: QWidget) -> list[CollapsibleSettingCardGroup]:
-        groups = []
-        for pack in self._packs:
-            if pack.config:
-                groups.extend(pack.config.settingGroups(parent))
-        return groups
 
     def runtimes(self):
         from app.models.pack import BinaryRuntime
@@ -205,7 +136,7 @@ class FeatureService:
             if pack.config and pack.config.associateFileTypes is not None:
                 cfg.set(pack.config.associateFileTypes, isEnabled)
 
-    def _registerAssociations(self) -> None:
+    def _registerAssociations(self, *_args) -> None:
         types = []
         enabledSchemes = []
         disabledSchemes = []

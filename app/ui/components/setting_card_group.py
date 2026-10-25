@@ -31,6 +31,7 @@ class SettingCardGroup(ui.Node):
         super().__init__()
         self.key = key
         self._cards: list[SettingCard] = []
+        self._cardBuilders = []
         self._isCollapsed = key not in cfg.expandedSettingGroups.value
         self._initWidget(title)
         self._initLayout()
@@ -65,9 +66,24 @@ class SettingCardGroup(ui.Node):
         for card in cards:
             self.addSettingCard(card)
 
+    def setCardsBuilder(self, build) -> None:
+        self._cardBuilders.append(build)
+        if not self._isCollapsed:
+            self._loadCards()
+
+    def addSettingCardFactory(self, build) -> None:
+        self.setCardsBuilder(lambda: self.addSettingCard(build()))
+
+    def _loadCards(self) -> None:
+        builders, self._cardBuilders = self._cardBuilders, []
+        for build in builders:
+            build()
+
     def setSearchText(self, value: str) -> bool:
         """只留匹配的设置行；有匹配时展开。返回这一组是否该显示。"""
         value = value.strip().lower()
+        if value or not self._isCollapsed:
+            self._loadCards()
         matched = [card for card in self._cards if not value or isSearchMatch(card, value)]
         if list(self.cardLayout.children) != matched:
             while self.cardLayout.children:
@@ -104,6 +120,8 @@ class SettingCardGroup(ui.Node):
         cfg.set(cfg.expandedSettingGroups, keys)
 
     def _setCollapsed(self, isCollapsed: bool) -> None:
+        if not isCollapsed:
+            self._loadCards()
         if isCollapsed == self._isCollapsed:
             return
         self._isCollapsed = isCollapsed

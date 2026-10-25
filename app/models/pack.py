@@ -20,8 +20,6 @@ if TYPE_CHECKING:
     from app.services.coroutine_runner import CoroutineRunner
     from app.services.speed_meter import SpeedMeter
     from app.signal import BoundSignal
-    from PySide6.QtWidgets import QWidget
-    from app.view.components.setting_card_group import CollapsibleSettingCardGroup
 
 
 @dataclass(frozen=True)
@@ -54,8 +52,6 @@ class TaskParser:
 
 
 class PackConfig:
-    createRuntimeCard: Callable[..., QWidget] | None = None
-    submit: Callable[..., str] | None = None
     associateFileTypes: ConfigItem | None = None
     associateUriSchemes: ConfigItem | None = None
     _items: dict[str, ConfigItem] = {}
@@ -85,8 +81,6 @@ class PackConfig:
                     if (key := k + "." + name) in cls._items:
                         cls._items[key].deserializeFrom(value)
 
-    def settingGroups(self, parent: QWidget) -> list[CollapsibleSettingCardGroup]:
-        return []
 
     def isFileAssociationEnabled(self) -> bool:
         if self.associateFileTypes is not None:
@@ -123,10 +117,10 @@ class BinaryRuntime:
     name: str = ""
     binaryName: str = ""
     canInstall: bool = False
-    # 自描述展示信息（title 用 QT_TRANSLATE_NOOP 声明原文，展示端 translate）
+    # 自描述展示信息（title 用 N 声明原文，展示端 translate）
     title: str = ""
     description: str = ""
-    icon: str = ""          # FluentIcon 成员名，View 侧解析
+    icon: str = ""          # 图标名称，View 侧解析
     isRecommended: bool = False
 
     @property
@@ -180,15 +174,20 @@ class BinaryRuntime:
             deleteInstalled(path)
 
 
-class PackPage:
-    icon: ...
-    title: str = ""
 
 
 @dataclass(frozen=True)
 class PackServices:
     coroutineRunner: CoroutineRunner
     speedMeter: SpeedMeter
+
+
+@dataclass(frozen=True)
+class PackPageManifest:
+    title: str
+    icon: str
+    moduleName: str
+    className: str
 
 
 @dataclass(frozen=True)
@@ -200,6 +199,7 @@ class PackManifest:
     dependencies: tuple[str, ...]
     version: str
     gdMinVersion: str
+    uiPages: tuple[PackPageManifest, ...] = ()
 
     @classmethod
     def fromDir(cls, packDir: Path) -> PackManifest | None:
@@ -251,6 +251,17 @@ class PackManifest:
         if not isinstance(gdMinVersion, str):
             gdMinVersion = ""
 
+        pages = []
+        try:
+            for page in raw.get("ui", {}).get("pages", []):
+                values = [page[key] for key in ("title", "icon", "module", "class")]
+                if any(not isinstance(value, str) or not value for value in values):
+                    raise ValueError("invalid UI page")
+                pages.append(PackPageManifest(*values))
+        except (AttributeError, KeyError, TypeError, ValueError):
+            logger.warning("manifest UI pages 无效: {}", manifestPath)
+            return None
+
         return cls(
             name=packDir.name,
             className=className,
@@ -259,6 +270,7 @@ class PackManifest:
             dependencies=tuple(deps),
             version=version,
             gdMinVersion=gdMinVersion,
+            uiPages=tuple(pages),
         )
 
 
@@ -277,20 +289,10 @@ class FeaturePack:
     def __init__(self, services: PackServices):
         self._services = services
 
-    def taskCardClass(self, task: Task) -> type | None:
-        return None
 
-    def draftCardClass(self, task: Task) -> type | None:
-        return None
 
-    def optionCards(self, task: Task, parent=None) -> list[QWidget]:
-        return []
 
-    def editCards(self, task: Task, parent=None) -> list[QWidget]:
-        return self.optionCards(task, parent)
 
-    def detailCards(self, task: Task, parent=None) -> list[QWidget]:
-        return []
 
     def runtimes(self) -> list[BinaryRuntime]:
         return []
@@ -301,8 +303,6 @@ class FeaturePack:
     def uriSchemes(self) -> list[UriScheme]:
         return []
 
-    def pages(self) -> list[type[PackPage]]:
-        return []
 
     async def activate(self):
         pass

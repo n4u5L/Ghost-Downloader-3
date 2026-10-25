@@ -106,22 +106,9 @@ class BitTorrentPack(FeaturePack):
     proxySchemes = PROXY_SCHEMES
     parsers = [TorrentParser]
 
-    def taskCardClass(self, task: Task) -> type | None:
-        from .cards import BTTaskCard
-        return BTTaskCard
 
-    def draftCardClass(self, task: Task) -> type | None:
-        from .cards import BTDraftCard
-        return BTDraftCard
 
-    def optionCards(self, task, parent=None):
-        from app.view.components.option_cards import OutputFolderCard
-        return [OutputFolderCard(parent, initial=task.outputFolder)]
 
-    def detailCards(self, task, parent=None):
-        from .detail_cards import PeerCard, TorrentCard, TrackerCard
-        runner = self._services.coroutineRunner
-        return [TorrentCard(task, runner, parent), TrackerCard(task, runner, parent), PeerCard(task, runner, parent)]
 
     def fileTypes(self):
         return [
@@ -137,7 +124,6 @@ class BitTorrentPack(FeaturePack):
         return [UriScheme("magnet", "Magnet")]
 
     async def activate(self):
-        btSession.open()
         refreshTrackerListIfStale()
 
     async def deactivate(self):

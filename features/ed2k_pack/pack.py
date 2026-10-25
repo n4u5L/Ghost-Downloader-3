@@ -56,13 +56,7 @@ class ED2kPack(FeaturePack):
         super().__init__(services)
         ed2kSession.open(services.coroutineRunner, createKelpie)
 
-    def taskCardClass(self, task: Task) -> type | None:
-        from .cards import ED2kTaskCard
-        return ED2kTaskCard
 
-    def detailCards(self, task, parent=None):
-        from .detail_cards import ED2kCard, ED2kSourceCard
-        return [ED2kCard(task, parent), ED2kSourceCard(task, parent)]
 
     def uriSchemes(self) -> list[UriScheme]:
         return [UriScheme("ed2k", "eD2k")]
