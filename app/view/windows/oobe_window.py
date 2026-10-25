@@ -23,7 +23,8 @@ from qfluentwidgets.common.style_sheet import updateStyleSheet
 from app.config.cfg import cfg, LANGUAGE_TEXTS
 from app.i18n import toLocalizedError
 from app.models.task import toTaskError
-from app.platform.desktop import openChromiumUrl, revealInFolder
+from app.platform.browser import openChromiumUrl
+from app.platform.desktop import revealInFolder
 from app.platform.file_association import registerUrlScheme, unregisterUrlScheme
 from app.platform.run_at_login import setRunAtLogin
 from app.services.port_listener import ListenStatus

@@ -96,8 +96,9 @@ def startApp(application, primaryInstance, isSilent=False):
     updateService = UpdateService(coroutineRunner)
     loadPacks(featureService, coroutineRunner, speedMeter)
 
+    from app.platform.desktop import openFile
     from app.services.plan import Plan
-    plan = Plan(allCompleted=lambda: taskService.runningCount() == 0)
+    plan = Plan(allCompleted=lambda: taskService.runningCount() == 0, openFile=openFile)
     taskService.tasksAllCompleted.connect(plan.trigger)
 
     application.clipboardListener = ClipboardListener(featureService.matchPassive, parent=application)

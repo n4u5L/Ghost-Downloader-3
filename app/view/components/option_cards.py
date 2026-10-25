@@ -10,14 +10,8 @@ from qfluentwidgets import (
     isDarkTheme,
 )
 
+from app.client import PROFILE_FAMILY_LABELS
 from app.config.cfg import cfg, currentHeaders
-
-PROFILE_FAMILY_LABELS = {
-    "chrome": "Chrome", "edge": "Edge",
-    "firefox": "Firefox", "firefox-android": "Firefox Android", "opera": "Opera",
-    "safari": "Safari", "safari-ios": "Safari iOS", "safari-ipad": "Safari iPad",
-    "okhttp": "OkHttp",
-}
 
 
 def toProfileLabel(value: str) -> str:

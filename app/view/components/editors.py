@@ -45,14 +45,8 @@ class AutoSizingEdit(PlainTextEdit):
         return self._sizeForLines(count).expandedTo(self.minimumSizeHint())
 
 
-RECENT_FOLDER_LIMIT: Final[int] = 20
 LINE_EDIT_PADDING: Final[int] = 60
 MENU_ROW_HEIGHT: Final[int] = 36
-
-
-def addRecentFolder(path: str) -> None:
-    others = [folder for folder in cfg.recentFolders.value if Path(folder) != Path(path)]
-    cfg.set(cfg.recentFolders, [path, *others][:RECENT_FOLDER_LIMIT])
 
 
 class AutoSizingLineEdit(LineEdit):

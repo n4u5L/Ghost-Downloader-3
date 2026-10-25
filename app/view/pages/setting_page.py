@@ -13,7 +13,7 @@ from qfluentwidgets import (
 
 from app.view.components.scroll_area import FastScrollArea
 
-from app.config.cfg import cfg, LANGUAGE_TEXTS
+from app.config.cfg import LANGUAGE_TEXTS, addRecentFolder, cfg
 from app.i18n import toLocalizedError
 from app.models.task import toTaskError
 from app.services.port_listener import ListenStatus
@@ -27,7 +27,7 @@ from app.view.components.setting_cards import (
     ClipboardSettingCard, HeadersPresetSettingCard, IdentitySettingCard, LineEditSettingCard,
     PercentSpinBoxSettingCard, ProxySettingCard, SpinBoxSettingCard,
 )
-from app.view.components.editors import FolderPicker, addRecentFolder
+from app.view.components.editors import FolderPicker
 
 
 class SettingPage(FastScrollArea):

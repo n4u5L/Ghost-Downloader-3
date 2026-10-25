@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from enum import IntEnum
 
 
@@ -12,8 +13,9 @@ class PlanAction(IntEnum):
 
 class Plan:
 
-    def __init__(self, allCompleted):
+    def __init__(self, allCompleted: Callable[[], bool], openFile: Callable[[str], object]):
         self._allCompleted = allCompleted
+        self._openFile = openFile
         self.action: PlanAction | None = None
         self.filePath: str = ""
         self._onCleared = None
@@ -37,14 +39,14 @@ class Plan:
         if not self._allCompleted():
             return
 
-        from app.platform.desktop import openFile, restart, shutdown, sleep
+        from app.platform.power import restart, shutdown, sleep
 
         action, filePath = self.action, self.filePath
         self.clear()
 
         if action == PlanAction.OPEN_FILE:
             if filePath:
-                openFile(filePath)
+                self._openFile(filePath)
         elif action == PlanAction.RESTART:
             restart()
         elif action == PlanAction.SLEEP:

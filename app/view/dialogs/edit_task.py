@@ -10,7 +10,7 @@ from qfluentwidgets import (
 
 from app.format import toReadableSize
 from app.view.components.card_groups import OptionCardGroup
-from app.view.components.editors import addRecentFolder
+from app.config.cfg import addRecentFolder
 from app.i18n import toLocalizedError
 from app.models.task import toTaskError
 

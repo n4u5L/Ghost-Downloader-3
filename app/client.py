@@ -156,6 +156,15 @@ def buildClient(
     return Client(**config)
 
 
+# 各指纹家族的显示名
+PROFILE_FAMILY_LABELS = {
+    "chrome": "Chrome", "edge": "Edge",
+    "firefox": "Firefox", "firefox-android": "Firefox Android", "opera": "Opera",
+    "safari": "Safari", "safari-ios": "Safari iOS", "safari-ipad": "Safari iPad",
+    "okhttp": "OkHttp",
+}
+
+
 def profileFamilies() -> list[str]:
     return [f for f in (
         "chrome", "edge", "firefox", "firefox-android", "opera",

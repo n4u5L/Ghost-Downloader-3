@@ -15,7 +15,8 @@ from qfluentwidgets import (
 )
 
 from app.view.components.card_groups import DraftCardGroup, OptionCardGroup
-from app.view.components.editors import AutoSizingEdit, addRecentFolder
+from app.config.cfg import addRecentFolder
+from app.view.components.editors import AutoSizingEdit
 from app.view.components.option_cards import OutputFolderCard, SubworkerCountCard
 from app.i18n import toLocalizedError
 

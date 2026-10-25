@@ -9,7 +9,8 @@ from qfluentwidgets import BodyLabel, MessageBoxBase, SubtitleLabel, isDarkTheme
 
 from app.view.components.scroll_area import ScrollArea
 
-from app.platform.desktop import openChromiumUrl, revealInFolder
+from app.platform.browser import openChromiumUrl
+from app.platform.desktop import revealInFolder
 
 PREVIEW_SIZE = QSize(720, 405)
 PREVIEW_GIF = ":/res/install_chrome_extension_guidance.webp"

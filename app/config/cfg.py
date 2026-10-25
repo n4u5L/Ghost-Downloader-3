@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sys
 from enum import Enum
+from pathlib import Path
 from re import compile
 from urllib.parse import urlsplit
 from urllib.request import getproxies
@@ -341,6 +342,13 @@ class Config(QConfig):
 
 
 cfg = Config()
+
+RECENT_FOLDER_LIMIT = 20
+
+
+def addRecentFolder(path: str) -> None:
+    others = [folder for folder in cfg.recentFolders.value if Path(folder) != Path(path)]
+    cfg.set(cfg.recentFolders, [path, *others][:RECENT_FOLDER_LIMIT])
 
 
 def currentHeadersPresetIndex() -> int:
